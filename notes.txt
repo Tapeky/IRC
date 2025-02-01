@@ -1,0 +1,28 @@
+Format des messages IRC :
+	[:[prefix] ]<command> <params> [:trailing]
+
+	Exemples concrets :
+	1. :nick!user@host PRIVMSG #channel :Hello world
+	2. NICK MyNewNickname
+	3. JOIN #channel
+
+
+Commandes IRC principales à implémenter :
+	Connexion & Authentification:
+		PASS password       // Mot de passe du serveur
+		NICK nickname       // Définir/changer le pseudo
+		USER username ...   // Définir le nom d'utilisateur
+
+	Gestion des Canaux :
+		JOIN #channel       // Rejoindre un canal
+		PART #channel      // Quitter un canal
+		TOPIC #channel     // Voir/modifier le sujet
+		MODE #channel +k password  // Modifier les modes
+
+	Communication :
+		PRIVMSG #channel :message  // Message à un canal
+		PRIVMSG nick :message      // Message privé
+
+	Commandes Opérateur :
+		KICK #channel nickname     // Éjecter un utilisateur
+		INVITE nickname #channel   // Inviter un utilisateur
