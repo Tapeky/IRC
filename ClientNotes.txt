@@ -1,0 +1,4 @@
+Pourquoi utiliser un buffer ?
+	Les messages peuvent arriver en plusieurs morceaux.
+	Un recv() peut contenir plusieurs messages. (recv = Recevoir un message sur une socket)
+	Les messges IRC se terminent par "\r\n"
