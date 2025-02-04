@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/01 12:09:09 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/03 23:51:14 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/04 00:46:48 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -222,9 +222,9 @@ void Server::disconnectClient(int clientfd) {
     }
 }
 
-void Server::handleClientMessage(Client *client, const std::string& message) {
-	// TODO : Parser et traiter les commandes IRC
-	std::cout << "Received message from client: " << client->getFd() << ": " << message << std::endl;
+void Server::handleClientMessage(Client* client, const std::string& message) {
+    Command cmd = CommandParser::parseCommand(message);
+    CommandExecutor::executeCommand(client, cmd);
 }
 
 

@@ -1,0 +1,56 @@
+src/Server.cpp:108:27: error: identifier ‘nullptr’ is a keyword in C++11 [-Werror=c++11-compat]
+  108 |         Client  *client = nullptr;
+      |                           ^~~~~~~
+src/Server.cpp: In member function ‘void Server::handleNewConnection()’:
+src/Server.cpp:108:27: error: ‘nullptr’ was not declared in this scope
+src/Server.cpp: In member function ‘void Server::disconnectClient(int)’:
+src/Server.cpp:190:45: error: ‘to_string’ is not a member of ‘std’; did you mean ‘wstring’?
+  190 |     logInfo("Disconnecting client: " + std::to_string(clientfd));
+      |                                             ^~~~~~~~~
+      |                                             wstring
+src/Server.cpp: In member function ‘void Server::broadcastMessage(const string&)’:
+src/Server.cpp:232:46: error: ‘to_string’ is not a member of ‘std’; did you mean ‘wstring’?
+  232 |                                         std::to_string(it->first) + ": " + e.what());
+      |                                              ^~~~~~~~~
+      |                                              wstring
+src/Server.cpp: In member function ‘Client* Server::getClientByNickname(const string&) const’:
+src/Server.cpp:251:12: error: ‘nullptr’ was not declared in this scope
+  251 |     return nullptr;
+      |            ^~~~~~~
+In file included from /usr/include/c++/11/vector:67,
+                 from ./inc/Server.hpp:17,
+                 from src/Server.cpp:13:
+/usr/include/c++/11/bits/stl_vector.h: In instantiation of ‘std::_Vector_base<_Tp, _Alloc>::~_Vector_base() [with _Tp = Channel; _Alloc = std::allocator<Channel>]’:
+/usr/include/c++/11/bits/stl_vector.h:489:16:   required from ‘std::vector<_Tp, _Alloc>::vector() [with _Tp = Channel; _Alloc = std::allocator<Channel>]’
+src/Server.cpp:20:54:   required from here
+/usr/include/c++/11/bits/stl_vector.h:336:49: error: invalid use of incomplete type ‘class Channel’
+  336 |                       _M_impl._M_end_of_storage - _M_impl._M_start);
+      |                       ~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+In file included from src/Server.cpp:13:
+./inc/Server.hpp:26:7: note: forward declaration of ‘class Channel’
+   26 | class Channel;
+      |       ^~~~~~~
+In file included from /usr/include/c++/11/bits/alloc_traits.h:33,
+                 from /usr/include/c++/11/ext/alloc_traits.h:34,
+                 from /usr/include/c++/11/bits/basic_string.h:40,
+                 from /usr/include/c++/11/string:55,
+                 from /usr/include/c++/11/bits/locale_classes.h:40,
+                 from /usr/include/c++/11/bits/ios_base.h:41,
+                 from /usr/include/c++/11/ios:42,
+                 from /usr/include/c++/11/ostream:38,
+                 from /usr/include/c++/11/iostream:39,
+                 from ./inc/Server.hpp:16,
+                 from src/Server.cpp:13:
+/usr/include/c++/11/bits/stl_construct.h: In instantiation of ‘void std::_Destroy(_ForwardIterator, _ForwardIterator) [with _ForwardIterator = Channel*]’:
+/usr/include/c++/11/bits/alloc_traits.h:848:15:   required from ‘void std::_Destroy(_ForwardIterator, _ForwardIterator, std::allocator<_T2>&) [with _ForwardIterator = Channel*; _Tp = Channel]’
+/usr/include/c++/11/bits/stl_vector.h:680:15:   required from ‘std::vector<_Tp, _Alloc>::~vector() [with _Tp = Channel; _Alloc = std::allocator<Channel>]’
+src/Server.cpp:20:54:   required from here
+/usr/include/c++/11/bits/stl_construct.h:195:25: error: invalid use of incomplete type ‘std::iterator_traits<Channel*>::value_type’ {aka ‘class Channel’}
+  195 |       std::_Destroy_aux<__has_trivial_destructor(_Value_type)>::
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from src/Server.cpp:13:
+./inc/Server.hpp:26:7: note: forward declaration of ‘std::iterator_traits<Channel*>::value_type’ {aka ‘class Channel’}
+   26 | class Channel;
+      |       ^~~~~~~
+cc1plus: all warnings being treated as errors
+make: *** [<builtin>: src/Server.o] Error 1

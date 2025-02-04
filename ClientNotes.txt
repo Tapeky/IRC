@@ -2,3 +2,11 @@ Pourquoi utiliser un buffer ?
 	Les messages peuvent arriver en plusieurs morceaux.
 	Un recv() peut contenir plusieurs messages. (recv = Recevoir un message sur une socket)
 	Les messges IRC se terminent par "\r\n"
+
+Un Client doit:
+	S'authentifier (Fonction PASS (a faire))
+	Definir un pseudo (Fonction NICK (a faire))
+	Definir un Username (Fonction NAME (a faire))
+
+bool _authenticated = true quand le client a fourni le bon mot de passe.
+bool _registrationDone = true quand le client a completer NICK et USER
