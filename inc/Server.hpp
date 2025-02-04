@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/01 11:57:05 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/04 00:46:45 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/04 15:14:07 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,41 +25,59 @@
 # include "../src/commands/Command.hpp"
 # include "../src/commands/CommandExecutor.hpp"
 
-
 class Client;
 class Channel;
 
 class Server {
-	private:
-		int							_serverSocket;
-		int							_port;
-		std::string					_password;
-		std::map<int, Client*>		_clients; // paires de socket et client
-		//std::vector<Channel>		_channels;
-		std::vector<pollfd>			_pollfds;
+   private:
+       static Server*              _instance;
+       int                         _serverSocket;
+       int                         _port;
+       std::string                 _password;
+       std::map<int, Client*>      _clients;
+       std::vector<pollfd>         _pollfds;
 
-	public:
-		Server(int pord, std::string& password);
-		~Server();
+       // Constructeur privé pour Singleton
+       Server(int port, std::string& password);
+       Server(const Server&);              
+       void operator=(const Server&);      
 
-		void	start();
-		void	run();
+   public:
+       ~Server();
 
-	private:
-		void	setupServerSocket();
-		void	handleNewConnection();
-		void	handleClientData(int clientfd);
-		void    disconnectClient(int clientfd);
-		void    handleClientMessage(Client* client, const std::string& message);
+       // Méthodes Singleton
+       static Server& getInstance() {
+           if (!_instance)
+               throw std::runtime_error("Server not initialized");
+           return *_instance;
+       }
 
-		// Utils
-		bool	isClientAuthenticated(int fd) const;
-		void	broadcastMessage(const std::string& message);
-		bool    isNicknameAvailable(const std::string& nickname) const;
-		Client* getClientByNickname(const std::string& nickname) const;
-		void	logError(const std::string& message);
-		void	logInfo(const std::string& message);
+       static void initInstance(int port, std::string& password) {
+           if (!_instance)
+               _instance = new Server(port, password);
+       }
 
+       static void destroyInstance() {
+           delete _instance;
+           _instance = NULL;
+       }
+
+       // Méthodes existantes
+       void    start();
+       void    run();
+       bool    isClientAuthenticated(int fd) const;
+       void    broadcastMessage(const std::string& message);
+       bool    isNicknameAvailable(const std::string& nickname) const;
+       Client* getClientByNickname(const std::string& nickname) const;
+
+   private:
+       void    setupServerSocket();
+       void    handleNewConnection();
+       void    handleClientData(int clientfd);
+       void    disconnectClient(int clientfd);
+       void    handleClientMessage(Client* client, const std::string& message);
+       void    logError(const std::string& message);
+       void    logInfo(const std::string& message);
 };
 
 #endif

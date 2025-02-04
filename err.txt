@@ -1,1 +1,0 @@
-c++ -Wall -Wextra -Werror -std=c++98 -I./inc   -c -o src/Server.o src/Server.cpp

@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/04 01:15:54 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/04 15:15:19 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@ void CommandExecutor::handleNick(Client* client, const Command& cmd) {
 		}
 	}
 
-	// getInstance a implementer
+	// Check if nickname is already in use
 	if (!Server::getInstance().isNicknameAvailable(nickname)) {
 		client->sendReply("433", nickname + "Nickname is already in use");
 		return;

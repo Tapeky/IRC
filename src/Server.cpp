@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/01 12:09:09 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/04 00:46:48 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/04 15:17:12 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@
 # include <string.h>
 # include <sstream>
 # include <cstring>
+
+Server* Server::_instance = NULL;
 
 Server::Server(int port, std::string& password)
 	: _serverSocket(-1), _port(port), _password(password) {
