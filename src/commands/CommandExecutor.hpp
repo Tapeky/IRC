@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:39 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/05 21:00:00 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/05 22:29:49 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@ class CommandExecutor {
 		static void	handlePass(Client* client, const Command& cmd);
 		static void handleJoin(Client* client, const Command& cmd);
 		static void handlePrivmsg(Client* client, const Command& cmd);
+		static void handlePart(Client* client, const Command& cmd);
 };
 
 #endif

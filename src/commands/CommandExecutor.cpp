@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/05 21:08:33 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/05 22:36:05 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,9 @@ void CommandExecutor::executeCommand(Client* client, const Command& cmd) {
 	}
 	else if (cmd.command == "PRIVMSG") {
 		handlePrivmsg(client, cmd);
+	}
+	else if (cmd.command == "PART") {
+		handlePart(client, cmd);
 	}
 	// Autres commandes a faire...
 }
@@ -97,16 +100,15 @@ void CommandExecutor::handleUser(Client* client, const Command& cmd) {
         client->sendReply("461", "USER :Not enough parameters");
         return;
     }
-    if (!client->getUsername().empty()) {
+    
+	if (!client->getUsername().empty()) {
         client->sendReply("462", ":You may not reregister");
         return;
     }
 
     client->setUsername(cmd.params[0]);
     
-    // Si on a déjà le nickname, on peut compléter l'enregistrement
     if (!client->getNickname().empty()) {
-        // Messages de bienvenue standards IRC
         client->sendReply("001", ":Welcome to the Internet Relay Network " + 
                                 client->getNickname() + "!" + client->getUsername() + "@" + "localhost");
         client->sendReply("002", ":Your host is ircserv, running version 1.0");
@@ -211,4 +213,29 @@ void CommandExecutor::handlePrivmsg(Client* client, const Command& cmd) {
 		targetClient->sendMessage(fullMessage);
 	}
 
+}
+
+void CommandExecutor::handlePart(Client *client, const Command& cmd) {
+	if (cmd.params.empty()) {
+		client->sendReply("461", "PART :Not enough parameters");
+		return;
+	}
+
+	const std::string& channelName = cmd.params[0];
+	Channel* channel = Server::getInstance().getChannel(channelName);
+
+	if (!channel) {
+		client->sendReply("403", channelName + " :No such channel");
+		return;
+	}
+
+	std::string partMsg = ":" + client->getNickname() + " PART " + channelName;
+	if (cmd.params.size() > 1)
+		partMsg += " :" + cmd.params[1];
+
+	const std::vector<Client*>& clients = channel->getClients();
+	for (size_t i = 0; i < clients.size(); ++i) 
+		clients[i]->sendMessage(partMsg);
+
+	channel->removeClient(client);
 }
