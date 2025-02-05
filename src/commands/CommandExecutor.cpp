@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/05 03:20:09 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/05 03:31:35 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,8 +26,10 @@ void CommandExecutor::executeCommand(Client* client, const Command& cmd) {
 	else if (cmd.command == "USER") {
 		handleUser(client, cmd);
 	}
-	// else if (cmd.command == "QUIT")
-	// 	handleQuit(client, cmd);
+	else if (cmd.command == "QUIT") {
+		handleQuit(client, cmd);
+		return;
+	}
 	// Autres commandes a faire...
 }
 
@@ -100,4 +102,10 @@ void CommandExecutor::handleUser(Client* client, const Command& cmd) {
 	if (!client->getNickname().empty()) 
    		client->sendReply("001", ":Welcome " + client->getNickname() + "!");
 
+}
+
+void CommandExecutor::handleQuit(Client* client, const Command& cmd) {
+	std::string quitMessage = cmd.params.empty() ? "Client Quit" : cmd.params[0];
+	Server::getInstance().broadcastMessage(":" + client->getNickname() + " QUIT :" + quitMessage);
+    Server::getInstance().disconnectClient(client->getFd());
 }

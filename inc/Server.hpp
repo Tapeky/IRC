@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/01 11:57:05 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/05 02:15:00 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/05 03:28:40 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,6 +69,7 @@ class Server {
        void    broadcastMessage(const std::string& message);
        bool    isNicknameAvailable(const std::string& nickname) const;
        Client* getClientByNickname(const std::string& nickname) const;
+       void    disconnectClient(int clientfd);
 
        // Getters
        const std::string& getPassword() const { return _password; }
@@ -78,7 +79,6 @@ class Server {
        void    setupServerSocket();
        void    handleNewConnection();
        void    handleClientData(int clientfd);
-       void    disconnectClient(int clientfd);
        void    handleClientMessage(Client* client, const std::string& message);
        void    logError(const std::string& message);
        void    logInfo(const std::string& message);
