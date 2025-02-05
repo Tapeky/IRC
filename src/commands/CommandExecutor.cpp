@@ -6,14 +6,20 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/04 15:15:19 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/05 02:16:08 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CommandExecutor.hpp"
 
 void CommandExecutor::executeCommand(Client* client, const Command& cmd) {
-	if (cmd.command == "NICK")
+	if (cmd.command == "PASS")
+		handlePass(client, cmd);
+	else if (!client->isAuthenticated()) {
+		client->sendReply("451", ":You have not registered");
+		return;
+	}
+	else if (cmd.command == "NICK")
 		handleNick(client, cmd);
 	// else if (cmd.command == "USER")
 	// 	handleUser(client, cmd);
@@ -53,4 +59,18 @@ void CommandExecutor::handleNick(Client* client, const Command& cmd) {
 		Server::getInstance().broadcastMessage(":" + oldNickname + " NICK " + nickname);
 	}
 
+}
+
+void CommandExecutor::handlePass(Client* client, const Command& cmd) {
+	if (cmd.params.empty()) {
+		client->sendReply("461", "PASS :Not enough parameters");
+		return;
+	}
+
+	if (cmd.params[0] == Server::getInstance().getPassword()) {
+		client->setAuthenticated(true);
+		client->sendReply("001", ":Authentication successful");
+	} else {
+		client->sendReply("464", ":Password Incorect");
+	}
 }

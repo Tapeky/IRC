@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/01 11:57:05 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/04 15:14:07 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/05 02:15:00 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,6 +69,10 @@ class Server {
        void    broadcastMessage(const std::string& message);
        bool    isNicknameAvailable(const std::string& nickname) const;
        Client* getClientByNickname(const std::string& nickname) const;
+
+       // Getters
+       const std::string& getPassword() const { return _password; }
+
 
    private:
        void    setupServerSocket();

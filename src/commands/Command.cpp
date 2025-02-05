@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:10 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/04 00:14:57 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/05 02:18:29 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,6 +51,6 @@ Command CommandParser::parseCommand(const std::string& message) {
 			break;
 		}
 	}
-   
+	
 	return cmd;
 }
