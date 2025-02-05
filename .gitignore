@@ -1,0 +1,17 @@
+# Ignorer tous les fichiers .o
+*.o
+
+# Ignorer tous les fichiers .txt
+*.txt
+
+# Ignorer les fichiers binaires
+*.out
+*.exe
+
+# Ignorer les dossiers de build
+build/
+bin/
+
+# Ignorer les fichiers de configuration locale
+*.local
+.env
