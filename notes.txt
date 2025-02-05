@@ -26,3 +26,7 @@ Commandes IRC principales à implémenter :
 	Commandes Opérateur :
 		KICK #channel nickname     // Éjecter un utilisateur
 		INVITE nickname #channel   // Inviter un utilisateur
+
+
+
+rlwrap nc localhost 6667   
