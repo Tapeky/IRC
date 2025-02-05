@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/01 12:09:09 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/04 15:17:12 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/05 14:20:13 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -274,3 +274,19 @@ void Server::logError(const std::string& message) {
 void Server::logInfo(const std::string& message) {
     std::cout << "INFO: " << message << std::endl;
 }
+
+
+/*-------------------CHANNELS------------------------*/
+
+Channel* Server::getOrCreateChannel(const std::string& name) {
+	if (_channels.find(name) == _channels.end())
+		_channels[name] = new Channel(name);
+	return _channels[name];
+}
+
+Channel* Server::getChannel(const std::string& name) {
+	if (_channels.find(name) == _channels.end())
+		return 0;
+	return _channels[name];
+}
+

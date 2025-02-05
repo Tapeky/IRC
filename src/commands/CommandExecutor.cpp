@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/05 03:31:35 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/05 15:06:44 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,9 @@ void CommandExecutor::executeCommand(Client* client, const Command& cmd) {
 	else if (cmd.command == "QUIT") {
 		handleQuit(client, cmd);
 		return;
+	}
+	else if (cmd.command == "JOIN") {
+		handleJoin(client, cmd);
 	}
 	// Autres commandes a faire...
 }
@@ -87,25 +90,66 @@ void CommandExecutor::handlePass(Client* client, const Command& cmd) {
 }
 
 void CommandExecutor::handleUser(Client* client, const Command& cmd) {
-	if (cmd.params.empty()) {
-		client->sendReply("461", "USER :Not enough parameters");
-		return;
-	}
-
+    if (cmd.params.empty()) {
+        client->sendReply("461", "USER :Not enough parameters");
+        return;
+    }
+    
 	if (!client->getUsername().empty()) {
-		client->sendReply("462", ":You may not reregister");
-		return;
-	}
-
+        client->sendReply("462", ":You may not reregister");
+        return;
+    }
+    
 	client->setUsername(cmd.params[0]);
-
-	if (!client->getNickname().empty()) 
-   		client->sendReply("001", ":Welcome " + client->getNickname() + "!");
-
+    client->sendReply("001", ":Username set to " + cmd.params[0]);
+    
+	if (!client->getNickname().empty()) {
+        client->sendReply("001", ":Welcome " + client->getNickname() + "!");
+        client->sendReply("002", ":Registration complete");
+    }
 }
 
 void CommandExecutor::handleQuit(Client* client, const Command& cmd) {
 	std::string quitMessage = cmd.params.empty() ? "Client Quit" : cmd.params[0];
 	Server::getInstance().broadcastMessage(":" + client->getNickname() + " QUIT :" + quitMessage);
     Server::getInstance().disconnectClient(client->getFd());
+}
+
+void CommandExecutor::handleJoin(Client* client, const Command& cmd) {
+	if (cmd.params.empty()) {
+		client->sendReply("461", "JOIN :Not enough parameters");
+		return;
+	}
+
+	const std::string& channelName = cmd.params[0];
+
+	// Check Format
+	if (channelName[0] != '#' && channelName[0] != '&') {
+		client->sendReply("403", channelName + " :No such channel");
+		return;
+	}
+
+	// Check Length
+	if (channelName.length() > 50) {
+        client->sendReply("403", channelName + " :Channel name too long");
+        return;
+    }
+
+	// Check unvalid characters
+	for (size_t i = 1; i < channelName.length(); ++i) {
+		if (!isalnum(channelName[i]) && channelName[i] != '-' && channelName[i] != '_') {
+			client->sendReply("403", channelName + " :Invalid channel name");
+			return;
+		}
+    }
+
+	Channel* channel = Server::getInstance().getOrCreateChannel(cmd.params[0]);
+    channel->addClient(client);
+	
+	// Inform all the clients
+	std::string joinMsg = ":" + client->getNickname() + " JOIN " + channelName;
+    const std::vector<Client*>& clients = channel->getClients();
+    for (size_t i = 0; i < clients.size(); ++i)
+        clients[i]->sendMessage(joinMsg);
+    
 }

@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/01 11:57:05 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/05 03:28:40 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/05 14:23:16 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,6 +36,7 @@ class Server {
        std::string                 _password;
        std::map<int, Client*>      _clients;
        std::vector<pollfd>         _pollfds;
+       std::map<std::string, Channel*> _channels;
 
        // Constructeur privé pour Singleton
        Server(int port, std::string& password);
@@ -73,6 +74,10 @@ class Server {
 
        // Getters
        const std::string& getPassword() const { return _password; }
+
+       // Channel operations
+       Channel *getOrCreateChannel(const std::string& name);
+       Channel *getChannel(const std::string& name);
 
 
    private:

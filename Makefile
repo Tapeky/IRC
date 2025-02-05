@@ -6,7 +6,7 @@
 #    By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/02/01 11:54:57 by tsadouk           #+#    #+#              #
-#    Updated: 2025/02/04 00:56:39 by tsadouk          ###   ########.fr        #
+#    Updated: 2025/02/05 14:29:08 by tsadouk          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,9 +17,9 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -I./inc
 SRCS = src/main.cpp \
        src/Server.cpp \
        src/Client.cpp \
+       src/Channel.cpp \
        src/commands/Command.cpp \
        src/commands/CommandExecutor.cpp \
-#       src/Channel.cpp
 
 OBJDIR = obj
 OBJS = $(SRCS:src/%.cpp=$(OBJDIR)/%.o)
