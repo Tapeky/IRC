@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/05 15:06:44 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/05 21:08:33 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,9 @@ void CommandExecutor::executeCommand(Client* client, const Command& cmd) {
 	}
 	else if (cmd.command == "JOIN") {
 		handleJoin(client, cmd);
+	}
+	else if (cmd.command == "PRIVMSG") {
+		handlePrivmsg(client, cmd);
 	}
 	// Autres commandes a faire...
 }
@@ -94,18 +97,21 @@ void CommandExecutor::handleUser(Client* client, const Command& cmd) {
         client->sendReply("461", "USER :Not enough parameters");
         return;
     }
-    
-	if (!client->getUsername().empty()) {
+    if (!client->getUsername().empty()) {
         client->sendReply("462", ":You may not reregister");
         return;
     }
+
+    client->setUsername(cmd.params[0]);
     
-	client->setUsername(cmd.params[0]);
-    client->sendReply("001", ":Username set to " + cmd.params[0]);
-    
-	if (!client->getNickname().empty()) {
-        client->sendReply("001", ":Welcome " + client->getNickname() + "!");
-        client->sendReply("002", ":Registration complete");
+    // Si on a déjà le nickname, on peut compléter l'enregistrement
+    if (!client->getNickname().empty()) {
+        // Messages de bienvenue standards IRC
+        client->sendReply("001", ":Welcome to the Internet Relay Network " + 
+                                client->getNickname() + "!" + client->getUsername() + "@" + "localhost");
+        client->sendReply("002", ":Your host is ircserv, running version 1.0");
+        client->sendReply("003", ":This server was created today");
+        client->sendReply("004", "ircserv 1.0 o o");
     }
 }
 
@@ -152,4 +158,57 @@ void CommandExecutor::handleJoin(Client* client, const Command& cmd) {
     for (size_t i = 0; i < clients.size(); ++i)
         clients[i]->sendMessage(joinMsg);
     
+}
+
+
+void CommandExecutor::handlePrivmsg(Client* client, const Command& cmd) {
+	if (cmd.params.size() < 2) {
+		client->sendReply("411", "PRIVMSG :Not enough parameters");
+		return;
+	}
+
+	const std::string& target = cmd.params[0];
+	const std::string& message = cmd.params[1];
+
+	// Message vers un channel
+	if (target[0] == '#' || target[0] == '&') {
+		Channel *channel = Server::getInstance().getChannel(target);
+		if (!channel) {
+			client->sendReply("401", target + " :No such channel");
+			return;
+		}
+
+		// On verifie si le client est dans le channel
+		const std::vector<Client*>& clients = channel->getClients();
+		bool isInChannel = false;
+		for (size_t i = 0; i < clients.size(); ++i) {
+			if (clients[i] == client) {
+				isInChannel = true;
+				break;
+			}
+		}
+
+		if (!isInChannel) {
+			client->sendReply("404", target + " :Cannot send to channel");
+			return;
+		}
+
+		// On envoie le message a tous les clients du channel sauf l expediteur
+		std::string fullMessage = ":" + client->getNickname() + " PRIVMSG " + target + " :" + message;
+		for (size_t i = 0; i < clients.size(); ++i) {
+			if (clients[i] != client)
+				clients[i]->sendMessage(fullMessage);
+		}
+	}
+	// Message prive
+	else {
+		Client* targetClient = Server::getInstance().getClientByNickname(target);
+		if (!targetClient) {
+			client->sendReply("401", target + " :No such nick/channel");
+			return;
+		}
+		std::string fullMessage = ":" + client->getNickname() + " PRIVMSG " + target + " :" + message;
+		targetClient->sendMessage(fullMessage);
+	}
+
 }
