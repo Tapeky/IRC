@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Channel.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
+/*   By: brguicho <brguicho@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/05 14:26:02 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/05 22:40:39 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/06 20:46:32 by brguicho         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,4 +29,9 @@ void Channel::removeClient(Client* client) {
 			return;
 		}
 	}
+}
+
+void Channel::setTopic(const std::string& topic)
+{
+	this->_topic = topic;
 }

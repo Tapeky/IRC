@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CommandExecutor.hpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
+/*   By: brguicho <brguicho@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:39 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/05 22:29:49 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/06 16:10:12 by brguicho         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ class CommandExecutor {
 		static void handleJoin(Client* client, const Command& cmd);
 		static void handlePrivmsg(Client* client, const Command& cmd);
 		static void handlePart(Client* client, const Command& cmd);
+		static void handleTopic(Client* client, const Command& cmd);
 };
 
 #endif

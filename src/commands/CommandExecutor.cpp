@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CommandExecutor.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
+/*   By: brguicho <brguicho@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/05 22:36:05 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/06 20:50:37 by brguicho         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,8 @@ void CommandExecutor::executeCommand(Client* client, const Command& cmd) {
 	else if (cmd.command == "PART") {
 		handlePart(client, cmd);
 	}
+	else if (cmd.command == "TOPIC")
+		handleTopic(client, cmd);
 	// Autres commandes a faire...
 }
 
@@ -238,4 +240,51 @@ void CommandExecutor::handlePart(Client *client, const Command& cmd) {
 		clients[i]->sendMessage(partMsg);
 
 	channel->removeClient(client);
+}
+
+void CommandExecutor::handleTopic(Client *client, const Command &cmd)
+{
+	if (cmd.params.empty()) {
+		
+		client->sendReply("461", "TOPIC :Not enough parameters");
+		return;
+	}
+	const std::string& channelName = cmd.params[0];
+	Channel* channel = Server::getInstance().getChannel(channelName);
+	if (!channel) {
+		client->sendReply("403", channelName + " :No such channel");
+		return;
+	}
+	if (cmd.params.size() == 1)
+	{
+		if (channel->getTopic().empty() == true)
+		{
+			std::string topicMsg = ":" + channelName + " does not have topic yet";
+			client->sendMessage(topicMsg);
+		}
+		else
+		{
+			std::string topicMsg = ":" + channelName + " topic is " + channel->getTopic();
+			client->sendMessage(topicMsg);
+		}
+	}
+	else
+	{
+		if (cmd.params[1].size() == 1 && cmd.params[1][0] == ':')
+		{
+			channel->setTopic("");
+			std::string topicMsg = ":" + channelName + " clearing actual topic";
+			client->sendMessage(topicMsg);
+		}
+		else if (cmd.params[1].size() > 1 && cmd.params[1][0] == ':')
+		{
+			std::string newtopic = cmd.params[1];
+			newtopic.erase(0,1);
+			channel->setTopic(newtopic);
+			std::string topicMsg = ":" + client->getNickname() + " change the topic to " + channel->getTopic();
+			const std::vector<Client*>& clients = channel->getClients();
+			for (size_t i = 0; i < clients.size(); ++i) 
+			clients[i]->sendMessage(topicMsg);
+		}
+	}
 }
