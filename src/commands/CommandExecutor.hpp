@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:39 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/05 22:29:49 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/06 18:07:20 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include "Command.hpp"
 #include "../../inc/Client.hpp"
 #include "../../inc/Server.hpp"
+#include "../../bonus/inc/FileTransfer.hpp"
 
 class CommandExecutor {
 	public:
@@ -28,6 +29,9 @@ class CommandExecutor {
 		static void handleJoin(Client* client, const Command& cmd);
 		static void handlePrivmsg(Client* client, const Command& cmd);
 		static void handlePart(Client* client, const Command& cmd);
+
+		// BONUS
+		static void handleDCC(Client* client, const Command& cmd);
 };
 
 #endif
