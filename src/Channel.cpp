@@ -6,7 +6,7 @@
 /*   By: brguicho <brguicho@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/05 14:26:02 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/06 20:46:32 by brguicho         ###   ########.fr       */
+/*   Updated: 2025/02/10 17:06:02 by brguicho         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,19 @@ void Channel::removeClient(Client* client) {
 			return;
 		}
 	}
+}
+
+bool Channel::isClientinChannel(Client *client)
+{
+	const std::vector<Client*>& clients = this->getClients();
+	bool isClientInChannel = false;
+	for (size_t i = 0; i < clients.size(); ++i) {
+		if (clients[i] == client) {
+			isClientInChannel = true;
+			break;
+		}
+	}
+	return (isClientInChannel);
 }
 
 void Channel::setTopic(const std::string& topic)

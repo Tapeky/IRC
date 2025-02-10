@@ -6,7 +6,7 @@
 /*   By: brguicho <brguicho@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/06 20:50:37 by brguicho         ###   ########.fr       */
+/*   Updated: 2025/02/10 21:13:17 by brguicho         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,8 +39,12 @@ void CommandExecutor::executeCommand(Client* client, const Command& cmd) {
 	else if (cmd.command == "PART") {
 		handlePart(client, cmd);
 	}
-	else if (cmd.command == "TOPIC")
+	else if (cmd.command == "TOPIC") {
 		handleTopic(client, cmd);
+	}
+	else if (cmd.command == "KICK") {
+		handleKick(client, cmd);
+	}
 	// Autres commandes a faire...
 }
 
@@ -184,14 +188,7 @@ void CommandExecutor::handlePrivmsg(Client* client, const Command& cmd) {
 
 		// On verifie si le client est dans le channel
 		const std::vector<Client*>& clients = channel->getClients();
-		bool isInChannel = false;
-		for (size_t i = 0; i < clients.size(); ++i) {
-			if (clients[i] == client) {
-				isInChannel = true;
-				break;
-			}
-		}
-
+		bool isInChannel = channel->isClientinChannel(client);
 		if (!isInChannel) {
 			client->sendReply("404", target + " :Cannot send to channel");
 			return;
@@ -255,15 +252,12 @@ void CommandExecutor::handleTopic(Client *client, const Command &cmd)
 		client->sendReply("403", channelName + " :No such channel");
 		return;
 	}
-	if (cmd.params.size() == 1)
-	{
-		if (channel->getTopic().empty() == true)
-		{
+	if (cmd.params.size() == 1) {
+		if (channel->getTopic().empty() == true) {
 			std::string topicMsg = ":" + channelName + " does not have topic yet";
 			client->sendMessage(topicMsg);
 		}
-		else
-		{
+		else {
 			std::string topicMsg = ":" + channelName + " topic is " + channel->getTopic();
 			client->sendMessage(topicMsg);
 		}
@@ -286,5 +280,40 @@ void CommandExecutor::handleTopic(Client *client, const Command &cmd)
 			for (size_t i = 0; i < clients.size(); ++i) 
 			clients[i]->sendMessage(topicMsg);
 		}
+	}
+}
+
+void CommandExecutor::handleKick(Client* client, const Command& cmd)
+{  
+	if (cmd.params.empty() || cmd.params.size() < 2) {
+		client->sendReply("461", "KICK :Not enough parameters");
+		return;
+	}
+	const std::string& channelName = cmd.params[0];
+	const std::string& target = cmd.params[1];
+	Channel* channel = Server::getInstance().getChannel(channelName);
+	if (!channel) {
+		client->sendReply("403", channelName + " :No such channel");
+		return;
+	}
+	Client* targetClient = Server::getInstance().getClientByNickname(target);
+	if (!targetClient) {
+		client->sendReply("401", target + " :No such nick/channel");
+		return;
+	}
+	bool isClientInChannel = channel->isClientinChannel(client);
+	bool isTargetInChannel = channel->isClientinChannel(targetClient);
+	std::cout << isClientInChannel << isTargetInChannel << std::endl;
+	if (!isClientInChannel){
+		client->sendReply("442", client->getNickname() +  channelName + " :You're not on that channel");
+	}
+	if (!isTargetInChannel)
+		client->sendReply("441", targetClient->getNickname() +  channelName + " :Is not on that channel");
+	if (isClientInChannel == true && isTargetInChannel == true)
+	{
+		std::string message = "You have been kicked from " + channelName;
+		std::string KickMsg = ":" + client->getNickname() + " PRIVMSG " + target + " :" + message;
+		targetClient->sendMessage(KickMsg);
+		channel->removeClient(targetClient);
 	}
 }

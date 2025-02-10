@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Channel.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
+/*   By: brguicho <brguicho@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/03 15:45:52 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/05 14:23:03 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/10 17:06:14 by brguicho         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,7 @@ class Channel {
       void setInviteOnly(bool status);
       void setTopicRestricted(bool status);
       void setUserLimit(size_t limit);
+      bool isClientinChannel(Client *client);
 };
 
 #endif

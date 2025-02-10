@@ -6,7 +6,7 @@
 /*   By: brguicho <brguicho@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:39 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/06 16:10:12 by brguicho         ###   ########.fr       */
+/*   Updated: 2025/02/07 08:52:03 by brguicho         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ class CommandExecutor {
 		static void handlePrivmsg(Client* client, const Command& cmd);
 		static void handlePart(Client* client, const Command& cmd);
 		static void handleTopic(Client* client, const Command& cmd);
+		static void handleKick(Client* client, const Command& cmd);
 };
 
 #endif
