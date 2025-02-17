@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/17 22:37:21 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/17 23:08:32 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,9 @@ void CommandExecutor::executeCommand(Client* client, const Command& cmd) {
 	}
 	else if (cmd.command == "INVITE") {
 		handleInvite(client, cmd);
+	}
+	else if (cmd.command == "MODE") {
+		handleMode(client, cmd);
 	}
 	else if (cmd.command == "DCC") {
 		handleDCC(client, cmd);
@@ -414,4 +417,99 @@ void CommandExecutor::handleDCC(Client* client, const Command& cmd) {
             client->sendReply("411", std::string(":") + e.what());
         }
     }
+}
+
+
+void CommandExecutor::handleMode(Client* client, const Command& cmd) {
+    if (cmd.params.size() < 2) {
+        client->sendReply("461", "MODE :Not enough parameters");
+        return;
+    }
+
+    const std::string& channelName = cmd.params[0];
+    const std::string& modeString = cmd.params[1];
+    
+    Channel* channel = Server::getInstance().getChannel(channelName);
+    if (!channel) {
+        client->sendReply("403", channelName + " :No such channel");
+        return;
+    }
+
+    if (!channel->isOperator(client)) {
+        client->sendReply("482", channelName + " :You're not channel operator");
+        return;
+    }
+
+    bool adding = true;
+    size_t paramIndex = 2;
+
+    for (size_t i = 0; i < modeString.length(); ++i) {
+        if (modeString[i] == '+') {
+            adding = true;
+            continue;
+        }
+        if (modeString[i] == '-') {
+            adding = false;
+            continue;
+        }
+
+        // Utilisation d'un if/else au lieu d'un switch pour éviter les problèmes de scope
+        char mode = modeString[i];
+        if (mode == 'i') {
+            channel->setInviteOnly(adding);
+        }
+        else if (mode == 't') {
+            channel->setTopicRestricted(adding);
+        }
+        else if (mode == 'k') {
+            if (adding) {
+                if (paramIndex >= cmd.params.size()) {
+                    client->sendReply("461", "MODE +k :Not enough parameters");
+                    continue;
+                }
+                channel->setKey(cmd.params[paramIndex++]);
+            } else {
+                channel->setKey("");
+            }
+        }
+        else if (mode == 'o') {
+            if (paramIndex >= cmd.params.size()) {
+                client->sendReply("461", "MODE +/-o :Not enough parameters");
+                continue;
+            }
+            Client* targetClient = Server::getInstance().getClientByNickname(cmd.params[paramIndex++]);
+            if (!targetClient) {
+                client->sendReply("401", cmd.params[paramIndex-1] + " :No such nick/channel");
+                continue;
+            }
+            if (adding)
+                channel->addOperator(targetClient);
+            else
+                channel->removeOperator(targetClient);
+        }
+        else if (mode == 'l') {
+            if (adding) {
+                if (paramIndex >= cmd.params.size()) {
+                    client->sendReply("461", "MODE +l :Not enough parameters");
+                    continue;
+                }
+                int limit = atoi(cmd.params[paramIndex++].c_str());
+                channel->setUserLimit(limit);
+            } else {
+                channel->setUserLimit(0);
+            }
+        }
+        else {
+            client->sendReply("472", std::string(1, modeString[i]) + " :is unknown mode char to me");
+        }
+    }
+
+    // Notifier tous les clients du canal du changement de mode
+    std::string modeMsg = ":" + client->getNickname() + " MODE " + channelName + " " + modeString;
+    for (size_t i = paramIndex; i < cmd.params.size(); ++i)
+        modeMsg += " " + cmd.params[i];
+    
+    const std::vector<Client*>& clients = channel->getClients();
+    for (size_t i = 0; i < clients.size(); ++i)
+        clients[i]->sendMessage(modeMsg);
 }
