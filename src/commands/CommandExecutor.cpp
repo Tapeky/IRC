@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/17 23:08:32 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/18 14:09:31 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -453,7 +453,6 @@ void CommandExecutor::handleMode(Client* client, const Command& cmd) {
             continue;
         }
 
-        // Utilisation d'un if/else au lieu d'un switch pour éviter les problèmes de scope
         char mode = modeString[i];
         if (mode == 'i') {
             channel->setInviteOnly(adding);
