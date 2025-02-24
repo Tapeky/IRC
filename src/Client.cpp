@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/02 09:10:13 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/24 13:39:10 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/24 17:10:27 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,17 +27,25 @@ void	Client::appendToBuffer(const std::string& data) {
 }
 
 bool	Client::hasCompleteMessage() const {
-	return _buffer.find("\r\n") != std::string::npos; // Dans le protocole IRC, les messages se terminent par \r\n
+	return _buffer.find("\r\n") != std::string::npos || _buffer.find("\n") != std::string::npos; // Dans le protocole IRC, les messages se terminent par \r\n
 }
 
 std::string Client::getNextMessage() {
-	size_t pos = _buffer.find("\r\n");
-	if (pos == std::string::npos)
-		return ""; // On a pas trouver d autre message
-
-	std::string message = _buffer.substr(0, pos); // On extrait le next msg
-	_buffer.erase(0, pos + 2);
-	return message;
+    size_t pos_crlf = _buffer.find("\r\n");
+    size_t pos_lf = _buffer.find("\n");
+    
+    // Déterminer quelle fin de ligne utiliser
+    if (pos_crlf != std::string::npos && (pos_lf == std::string::npos || pos_crlf < pos_lf)) {
+        std::string message = _buffer.substr(0, pos_crlf);
+        _buffer.erase(0, pos_crlf + 2);
+        return message;
+    } else if (pos_lf != std::string::npos) {
+        std::string message = _buffer.substr(0, pos_lf);
+        _buffer.erase(0, pos_lf + 1);
+        return message;
+    }
+    
+    return "";
 }
 
 void Client::sendMessage(const std::string& message) {

@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/24 16:22:09 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/24 17:29:24 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,8 +112,8 @@ void CommandExecutor::handlePass(Client* client, const Command& cmd) {
 }
 
 void CommandExecutor::handleUser(Client* client, const Command& cmd) {
-    if (cmd.params.empty()) {
-        client->sendReply("461", "USER :Not enough parameters");
+    if (cmd.params.size() < 4) {
+        client->sendReply("461", "USER :Not enough parameters\n Usage: <username> <hostname> <servername> <realname>");
         return;
     }
     
