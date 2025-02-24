@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/18 14:09:31 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/24 16:22:09 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -173,8 +173,30 @@ void CommandExecutor::handleJoin(Client* client, const Command& cmd) {
 	// Inform all the clients
 	std::string joinMsg = ":" + client->getNickname() + " JOIN " + channelName;
     const std::vector<Client*>& clients = channel->getClients();
-    for (size_t i = 0; i < clients.size(); ++i)
-        clients[i]->sendMessage(joinMsg);
+    for (size_t i = 0; i < clients.size(); ++i) {
+    	clients[i]->sendMessage(joinMsg);
+	}
+
+	// Display the list of clients in the channel
+	std::string namesList = "";
+
+	for (size_t i = 0; i < clients.size(); ++i) {
+		if (channel->isOperator(clients[i])) {
+			namesList += "@";
+		}
+		namesList += clients[i]->getNickname();
+		if (i < clients.size() - 1) {
+			namesList += " ";
+		}
+	}
+
+	client->sendReply("353", "= " + channelName + " :" + namesList);
+	client->sendReply("366", channelName + " :End of /NAMES list");
+
+	// Display the topic
+	if (!channel->getTopic().empty()) {
+		client->sendReply("332", channelName + " :" + channel->getTopic());
+	}
     
 }
 

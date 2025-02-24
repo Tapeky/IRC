@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/01 12:09:09 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/24 13:56:40 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/24 15:11:56 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -197,14 +197,15 @@ void Server::handleClientData(int clientfd) {
 
     char buffer[1024];
     ssize_t nbytes = recv(clientfd, buffer, sizeof(buffer) - 1, 0);
-
-	std::cout << "Raw buffer: [";
-	for (ssize_t i = 0; i < nbytes; i++) {
-		if (buffer[i] == '\r') std::cout << "\\r";
-		else if (buffer[i] == '\n') std::cout << "\\n";
-		else std::cout << buffer[i];
-	}
-	std::cout << "]" << std::endl;
+    
+    // Provisoire : Utile pour le debug
+    std::cout << "Raw buffer: [";
+    for (ssize_t i = 0; i < nbytes; i++) {
+        if (buffer[i] == '\r') std::cout << "\\r";
+        else if (buffer[i] == '\n') std::cout << "\\n";
+        else std::cout << buffer[i];
+    }
+    std::cout << "]" << std::endl;
     
     if (nbytes <= 0) {
         if (nbytes < 0)
@@ -220,13 +221,25 @@ void Server::handleClientData(int clientfd) {
         // Traiter tous les messages complets
         while (client->hasCompleteMessage()) {
             std::string message = client->getNextMessage();
-            handleClientMessage(client, message);
+            
+            // Erreur de syntaxe corrigée ici
+            if (message.find("QUIT") == 0) {
+                Command cmd = CommandParser::parseCommand(message);
+                handleClientMessage(client, message);
+                return;
+            } else {
+                handleClientMessage(client, message);
+                
+                // Erreurs de syntaxe corrigées ici
+                if (_clients.find(clientfd) == _clients.end() || _clients[clientfd] != client) {
+                    return;
+                }
+            }
         }
     } catch (const std::exception& e) {
         std::cerr << "Error processing client data: " << e.what() << std::endl;
         disconnectClient(clientfd);
     }
-	//std::cout << "Raw data received: [" << std::string(buffer, nbytes) << "]" << std::endl;
 }
 
 void Server::disconnectClient(int clientfd) {
