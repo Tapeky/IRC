@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/01 12:09:09 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/18 13:40:45 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/24 13:56:40 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,8 +17,17 @@
 # include <string.h>
 # include <sstream>
 # include <cstring>
+# include <signal.h>
 
 Server* Server::_instance = NULL;
+bool	Server::_running = true;
+
+void Server::handleSignal(int signum) {
+	if (signum == SIGINT) {
+		std::cout << "\nShutting down server... " << signum << std::endl;
+		_running = false;
+	}
+}
 
 Server::Server(int port, std::string& password)
 	: _serverSocket(-1), _port(port), _password(password) {
@@ -29,6 +38,11 @@ Server::Server(int port, std::string& password)
 Server::~Server() {
 	for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 		delete it->second;
+	_clients.clear();
+
+	for (std::map<std::string, Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it)
+		delete it->second;
+	_channels.clear();
 
 	if (_serverSocket != -1)
 		close(_serverSocket);
@@ -80,6 +94,7 @@ void Server::setupServerSocket() {
 	struct pollfd pfd;
 	pfd.fd = _serverSocket;
 	pfd.events = POLLIN;
+	pfd.revents = 0;
 	_pollfds.push_back(pfd);	
 }
 
@@ -123,6 +138,7 @@ void Server::handleNewConnection() {
 	struct pollfd pfd;
 	pfd.fd = clientSocket;
 	pfd.events = POLLIN;
+	pfd.revents = 0;
 	_pollfds.push_back(pfd);
 
 	// Envoyer un message de bienvenue
@@ -136,7 +152,10 @@ void Server::start() {
 }
 
 void Server::run() {
-	while (true) {
+	while (_running) {
+		for (size_t i = 0; i < _pollfds.size(); ++i)
+			_pollfds[i].revents = 0;
+
 		// Attendre des evenements sur les sockets
 		int ready = poll(_pollfds.data(), _pollfds.size(), -1);
 		if (ready == -1) {
@@ -155,6 +174,17 @@ void Server::run() {
 			}
 		}
 	}
+	for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        delete it->second;
+    }
+    _clients.clear();
+
+    for (size_t i = 0; i < _pollfds.size(); ++i) {
+        if (_pollfds[i].fd != -1) {
+            close(_pollfds[i].fd);
+        }
+    }
+    _pollfds.clear();
 }
 
 void Server::handleClientData(int clientfd) {
