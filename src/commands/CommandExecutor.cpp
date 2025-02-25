@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/24 17:29:24 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/25 08:24:33 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,6 +50,9 @@ void CommandExecutor::executeCommand(Client* client, const Command& cmd) {
 	}
 	else if (cmd.command == "MODE") {
 		handleMode(client, cmd);
+	}
+	else if (cmd.command == "HELP") {
+		handleHelp(client, cmd);
 	}
 	else if (cmd.command == "DCC") {
 		handleDCC(client, cmd);
@@ -273,126 +276,162 @@ void CommandExecutor::handlePart(Client *client, const Command& cmd) {
 
 void CommandExecutor::handleTopic(Client *client, const Command &cmd)
 {
-	if (cmd.params.empty()) {
-		
-		client->sendReply("461", "TOPIC :Not enough parameters");
-		return;
-	}
-	const std::string& channelName = cmd.params[0];
-	Channel* channel = Server::getInstance().getChannel(channelName);
-	if (!channel) {
-		client->sendReply("403", channelName + " :No such channel");
-		return;
-	}
-	if (cmd.params.size() == 1) {
-		if (channel->getTopic().empty() == true) {
-			std::string topicMsg = ":" + channelName + " does not have topic yet";
-			client->sendMessage(topicMsg);
-		}
-		else {
-			std::string topicMsg = ":" + channelName + " topic is " + channel->getTopic();
-			client->sendMessage(topicMsg);
-		}
-	}
-	else
-	{
-		if (cmd.params[1].size() == 1 && cmd.params[1][0] == ':')
-		{
-			channel->setTopic("");
-			std::string topicMsg = ":" + channelName + " clearing actual topic";
-			client->sendMessage(topicMsg);
-		}
-		else if (cmd.params[1].size() > 1 && cmd.params[1][0] == ':')
-		{
-			std::string newtopic = cmd.params[1];
-			newtopic.erase(0,1);
-			channel->setTopic(newtopic);
-			std::string topicMsg = ":" + client->getNickname() + " change the topic to " + channel->getTopic();
-			const std::vector<Client*>& clients = channel->getClients();
-			for (size_t i = 0; i < clients.size(); ++i) 
-			clients[i]->sendMessage(topicMsg);
-		}
-	}
+    if (cmd.params.empty()) {
+        client->sendReply("461", "TOPIC :Not enough parameters");
+        return;
+    }
+    
+    const std::string& channelName = cmd.params[0];
+    Channel* channel = Server::getInstance().getChannel(channelName);
+    
+    if (!channel) {
+        client->sendReply("403", channelName + " :No such channel");
+        return;
+    }
+    
+    // Vérifier si le client est dans le canal
+    if (!channel->isClientinChannel(client)) {
+        client->sendReply("442", channelName + " :You're not on that channel");
+        return;
+    }
+    
+    // Si pas de second paramètre, on affiche le topic
+    if (cmd.params.size() == 1) {
+        if (channel->getTopic().empty()) {
+            client->sendReply("331", channelName + " :No topic is set");
+        } else {
+            client->sendReply("332", channelName + " :" + channel->getTopic());
+        }
+        return;
+    }
+    
+    // Pour modifier le topic, vérifier les restrictions
+    if (channel->isTopicRestricted() && !channel->isOperator(client)) {
+        client->sendReply("482", channelName + " :You're not channel operator");
+        return;
+    }
+    
+    // Traitement pour effacer ou modifier le topic
+    if (cmd.params[1] == ":") {
+        channel->setTopic("");
+        std::string topicMsg = ":" + client->getNickname() + " TOPIC " + channelName + " :";
+        const std::vector<Client*>& clients = channel->getClients();
+        for (size_t i = 0; i < clients.size(); ++i) 
+            clients[i]->sendMessage(topicMsg);
+    } else {
+        std::string topic = cmd.params[1];
+        if (topic[0] == ':')
+            topic = topic.substr(1);
+        
+        channel->setTopic(topic);
+        std::string topicMsg = ":" + client->getNickname() + " TOPIC " + channelName + " :" + topic;
+        const std::vector<Client*>& clients = channel->getClients();
+        for (size_t i = 0; i < clients.size(); ++i) 
+            clients[i]->sendMessage(topicMsg);
+    }
 }
 
 void CommandExecutor::handleKick(Client* client, const Command& cmd)
 {  
-	if (cmd.params.size() < 2) {
-		client->sendReply("461", "KICK :Not enough parameters");
-		return;
-	}
-	const std::string& channelName = cmd.params[0];
-	const std::string& target = cmd.params[1];
-	Channel* channel = Server::getInstance().getChannel(channelName);
-	if (!channel) {
-		client->sendReply("403", channelName + " :No such channel");
-		return;
-	}
-	Client* targetClient = Server::getInstance().getClientByNickname(target);
-	if (!targetClient) {
-		client->sendReply("401", target + " :No such nick/channel");
-		return;
-	}
-	bool isClientInChannel = channel->isClientinChannel(client);
-	bool isTargetInChannel = channel->isClientinChannel(targetClient);
-	std::cout << isClientInChannel << isTargetInChannel << std::endl;
-	if (!isClientInChannel)
-	{
-		client->sendReply("442", client->getNickname() +  channelName + " :You're not on that channel");
-		return;
-	}
-	if (!isTargetInChannel)
-	{
-		client->sendReply("441", targetClient->getNickname() +  channelName + " :Is not on that channel");
-		return;
-	}
-	if (isClientInChannel == true && isTargetInChannel == true)
-	{
-		std::string message = "You have been kicked from " + channelName;
-		std::string KickMsg = ":" + client->getNickname() + " PRIVMSG " + target + " :" + message;
-		targetClient->sendMessage(KickMsg);
-		channel->removeClient(targetClient);
-	}
+    if (cmd.params.size() < 2) {
+        client->sendReply("461", "KICK :Not enough parameters");
+        return;
+    }
+    
+    const std::string& channelName = cmd.params[0];
+    const std::string& target = cmd.params[1];
+    
+    Channel* channel = Server::getInstance().getChannel(channelName);
+    if (!channel) {
+        client->sendReply("403", channelName + " :No such channel");
+        return;
+    }
+    
+    Client* targetClient = Server::getInstance().getClientByNickname(target);
+    if (!targetClient) {
+        client->sendReply("401", target + " :No such nick/channel");
+        return;
+    }
+    
+    // Vérifier si le client est dans le canal
+    if (!channel->isClientinChannel(client)) {
+        client->sendReply("442", channelName + " :You're not on that channel");
+        return;
+    }
+    
+    // Vérifier si le client est opérateur
+    if (!channel->isOperator(client)) {
+        client->sendReply("482", channelName + " :You're not channel operator");
+        return;
+    }
+    
+    // Vérifier si la cible est dans le canal
+    if (!channel->isClientinChannel(targetClient)) {
+        client->sendReply("441", target + " " + channelName + " :They aren't on that channel");
+        return;
+    }
+    
+    // Préparer le message de raison (optionnel)
+    std::string reason = cmd.params.size() > 2 ? cmd.params[2] : "No reason specified";
+    if (reason[0] == ':') reason = reason.substr(1);
+    
+    // Envoyer le message KICK à tous les clients du canal
+    std::string kickMsg = ":" + client->getNickname() + " KICK " + channelName + " " + target + " :" + reason;
+    const std::vector<Client*>& clients = channel->getClients();
+    for (size_t i = 0; i < clients.size(); ++i) {
+        clients[i]->sendMessage(kickMsg);
+    }
+    
+    // Retirer la cible du canal
+    channel->removeClient(targetClient);
 }
 
 void CommandExecutor::handleInvite(Client* client, const Command& cmd)
 {
-	if (cmd.params.size() < 2)
-	{
-		client->sendReply("461", "INVITE :Not enough parameters");
-		return;
-	}
-	const std::string& target = cmd.params[0];
-	const std::string& channelName = cmd.params[1];
-	Client* targetClient = Server::getInstance().getClientByNickname(target);
-	if (!targetClient) {
-		client->sendReply("401", target + " :No such nick/channel");
-		return;
-	}
-	Channel* channel = Server::getInstance().getChannel(channelName);
-	if (!channel) {
-		client->sendReply("403", channelName + " :No such channel");
-		return;
-	}
-	bool isClientInChannel = channel->isClientinChannel(client);
-	bool isTargetInChannel = channel->isClientinChannel(targetClient);
-	if (!isClientInChannel)
-	{
-		client->sendReply("442", client->getNickname() +  channelName + " :You're not on that channel");
-		return;
-	}
-	if (isTargetInChannel)
-	{
-		client->sendReply("443", client->getNickname() +  channelName + " :Is already in channel");
-		return;
-	}
-	else
-	{
-		std::string message = "You have been invited from " + target + " on channel " + channelName;
-		std::string InviteMsg = ":" + client->getNickname() + " PRIVMSG " + target + " :" + message;
-		targetClient->sendMessage(InviteMsg);
-		client->sendReply("341", targetClient->getNickname() + " has been invited to " + channelName);
-	}
+    if (cmd.params.size() < 2) {
+        client->sendReply("461", "INVITE :Not enough parameters");
+        return;
+    }
+    
+    const std::string& target = cmd.params[0];
+    const std::string& channelName = cmd.params[1];
+    
+    Client* targetClient = Server::getInstance().getClientByNickname(target);
+    if (!targetClient) {
+        client->sendReply("401", target + " :No such nick/channel");
+        return;
+    }
+    
+    Channel* channel = Server::getInstance().getChannel(channelName);
+    if (!channel) {
+        client->sendReply("403", channelName + " :No such channel");
+        return;
+    }
+    
+    // Vérifier si le client est dans le canal
+    if (!channel->isClientinChannel(client)) {
+        client->sendReply("442", channelName + " :You're not on that channel");
+        return;
+    }
+    
+    // Vérifier les permissions si le canal est en mode invite-only
+    if (channel->isInviteOnly() && !channel->isOperator(client)) {
+        client->sendReply("482", channelName + " :You're not channel operator");
+        return;
+    }
+    
+    // Vérifier si la cible est déjà dans le canal
+    if (channel->isClientinChannel(targetClient)) {
+        client->sendReply("443", target + " " + channelName + " :is already on channel");
+        return;
+    }
+    
+    // Envoyer l'invitation
+    std::string inviteMsg = ":" + client->getNickname() + " INVITE " + target + " :" + channelName;
+    targetClient->sendMessage(inviteMsg);
+    
+    // Confirmer l'invitation à l'expéditeur
+    client->sendReply("341", target + " " + channelName);
 }
 
 void CommandExecutor::handleDCC(Client* client, const Command& cmd) {
@@ -533,4 +572,112 @@ void CommandExecutor::handleMode(Client* client, const Command& cmd) {
     const std::vector<Client*>& clients = channel->getClients();
     for (size_t i = 0; i < clients.size(); ++i)
         clients[i]->sendMessage(modeMsg);
+}
+
+// Function to compare case-insensitive
+namespace {
+    bool iequals(const std::string& a, const std::string& b) {
+        if (a.length() != b.length())
+            return false;
+        for (size_t i = 0; i < a.length(); ++i)
+            if (tolower(a[i]) != tolower(b[i]))
+                return false;
+        return true;
+    }
+}
+
+void CommandExecutor::handleHelp(Client* client, const Command& cmd) {
+    if (cmd.params.empty()) {
+        client->sendReply("705", ":Available commands:");
+        client->sendReply("705", ":PASS, NICK, USER - Registration commands");
+        client->sendReply("705", ":JOIN, PART, TOPIC, KICK, INVITE - Channel operations");
+        client->sendReply("705", ":MODE - Change channel modes");
+        client->sendReply("705", ":PRIVMSG - Send messages to users or channels");
+        client->sendReply("705", ":QUIT - Disconnect from server");
+        client->sendReply("705", ":HELP - This help message");
+        client->sendReply("705", ":For help on a specific command, type: HELP <command>");
+        return;
+    }
+
+    const std::string& command = cmd.params[0];
+    
+    if (iequals(command, "PASS")) {
+        client->sendReply("705", ":PASS <password>");
+        client->sendReply("705", ":Sets a connection password. Must be used before NICK/USER.");
+    } 
+    else if (iequals(command, "NICK")) {
+        client->sendReply("705", ":NICK <nickname>");
+        client->sendReply("705", ":Sets or changes your nickname. Limited to 9 characters,");
+        client->sendReply("705", ":must start with a letter and contain only letters, numbers, - or _.");
+    } 
+    else if (iequals(command, "USER")) {
+        client->sendReply("705", ":USER <username> <hostname> <servername> <realname>");
+        client->sendReply("705", ":Specifies user information. Used during connection registration.");
+    } 
+    else if (iequals(command, "JOIN")) {
+        client->sendReply("705", ":JOIN <channel> [key]");
+        client->sendReply("705", ":Joins the specified channel with optional key (password).");
+        client->sendReply("705", ":Channels start with # or &, e.g.: JOIN #general");
+    } 
+    else if (iequals(command, "PART")) {
+        client->sendReply("705", ":PART <channel> [reason]");
+        client->sendReply("705", ":Leaves the specified channel with optional reason.");
+        client->sendReply("705", ":Example: PART #general :Going to lunch");
+    } 
+    else if (iequals(command, "PRIVMSG")) {
+        client->sendReply("705", ":PRIVMSG <target> :<message>");
+        client->sendReply("705", ":Sends a message to a user or channel.");
+        client->sendReply("705", ":Examples: PRIVMSG #channel :Hello everyone!");
+        client->sendReply("705", ":          PRIVMSG nickname :Hi there!");
+    } 
+    else if (iequals(command, "TOPIC")) {
+        client->sendReply("705", ":TOPIC <channel> [:<topic>]");
+        client->sendReply("705", ":Gets or sets the channel topic.");
+        client->sendReply("705", ":- TOPIC #channel       - View the current topic");
+        client->sendReply("705", ":- TOPIC #channel :     - Clear the topic");
+        client->sendReply("705", ":- TOPIC #channel :text - Set the topic to 'text'");
+        client->sendReply("705", ":Requires operator status if channel is +t.");
+    } 
+    else if (iequals(command, "KICK")) {
+        client->sendReply("705", ":KICK <channel> <user> [:<reason>]");
+        client->sendReply("705", ":Removes a user from a channel. Requires operator status.");
+        client->sendReply("705", ":Example: KICK #channel nickname :Misbehaving");
+    } 
+    else if (iequals(command, "INVITE")) {
+        client->sendReply("705", ":INVITE <user> <channel>");
+        client->sendReply("705", ":Invites a user to a channel. If channel is +i,");
+        client->sendReply("705", ":requires operator status to invite users.");
+    } 
+    else if (iequals(command, "MODE")) {
+        client->sendReply("705", ":MODE <channel> <modes> [parameters]");
+        client->sendReply("705", ":Sets channel modes. Requires operator status.");
+        client->sendReply("705", ":Available modes:");
+        client->sendReply("705", ":+i: Set channel to invite-only");
+        client->sendReply("705", ":-i: Remove invite-only restriction");
+        client->sendReply("705", ":+t: Only operators can change topic");
+        client->sendReply("705", ":-t: Anyone can change topic");
+        client->sendReply("705", ":+k <key>: Set channel password/key");
+        client->sendReply("705", ":-k: Remove channel password");
+        client->sendReply("705", ":+o <nick>: Give operator status to user");
+        client->sendReply("705", ":-o <nick>: Remove operator status from user");
+        client->sendReply("705", ":+l <limit>: Set user limit for channel");
+        client->sendReply("705", ":-l: Remove user limit");
+        client->sendReply("705", ":Examples: MODE #channel +t");
+        client->sendReply("705", ":          MODE #channel +k password");
+        client->sendReply("705", ":          MODE #channel +o nickname");
+    } 
+    else if (iequals(command, "QUIT")) {
+        client->sendReply("705", ":QUIT [:<reason>]");
+        client->sendReply("705", ":Disconnects from the server with optional reason.");
+        client->sendReply("705", ":Example: QUIT :Gone to lunch");
+    } 
+    else if (iequals(command, "DCC")) {
+        client->sendReply("705", ":DCC SEND <filename> <target>");
+        client->sendReply("705", ":Initiates file transfer to another user.");
+        client->sendReply("705", ":This is a bonus feature and may not be supported by all clients.");
+    } 
+    else {
+        client->sendReply("705", ":No help available for command: " + command);
+        client->sendReply("705", ":Type HELP for a list of available commands.");
+    }
 }
