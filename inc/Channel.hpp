@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/03 15:45:52 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/18 13:48:18 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/26 16:53:06 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ class Channel {
 		bool                    _inviteOnly;
 		bool                    _topicRestricted;
 		size_t                  _userLimit;
+		std::vector<Client*>    _invitedUsers;
    
 	public:
 		Channel(const std::string& name);
@@ -56,6 +57,9 @@ class Channel {
 		void    addOperator(Client* client);
 		void    removeOperator(Client* client);
 		bool    isClientinChannel(Client *client);
-};
+		void	inviteClient(Client *client);
+		bool	isInvited(Client *client) const;
+		void	removeInvite(Client *client);
+	};
 
 #endif

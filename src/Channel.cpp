@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/05 14:26:02 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/18 13:40:30 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/26 17:14:09 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,4 +64,28 @@ void Channel::removeOperator(Client* client) {
             return;
         }
     }
+}
+
+void Channel::inviteClient(Client *client) {
+	for (size_t i = 0; i < _invitedUsers.size(); ++i)
+		if (_invitedUsers[i] == client)
+			return;
+	_invitedUsers.push_back(client);
+}
+
+bool Channel::isInvited(Client *client) const {
+	for (size_t i = 0; i < _invitedUsers.size(); ++i) {
+		if (_invitedUsers[i] == client)
+			return true;
+	}
+	return false;
+}
+
+void Channel::removeInvite(Client *client) {
+	for (size_t i = 0; i < _invitedUsers.size(); ++i) {
+		if (_invitedUsers[i] == client) {
+			_invitedUsers.erase(_invitedUsers.begin() + i);
+			return;
+		}
+	}
 }

@@ -47,6 +47,17 @@
 		"cstring": "cpp",
 		"sstream": "cpp",
 		"map": "cpp",
-		"fstream": "cpp"
+		"fstream": "cpp",
+		"span": "cpp",
+		"charconv": "cpp",
+		"chrono": "cpp",
+		"ctime": "cpp",
+		"optional": "cpp",
+		"ratio": "cpp",
+		"format": "cpp",
+		"iomanip": "cpp",
+		"text_encoding": "cpp",
+		"cinttypes": "cpp",
+		"variant": "cpp"
 	}
 }

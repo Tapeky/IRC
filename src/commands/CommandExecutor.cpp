@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/25 08:24:33 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/26 18:19:15 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -143,64 +143,98 @@ void CommandExecutor::handleQuit(Client* client, const Command& cmd) {
 }
 
 void CommandExecutor::handleJoin(Client* client, const Command& cmd) {
-	if (cmd.params.empty()) {
-		client->sendReply("461", "JOIN :Not enough parameters");
-		return;
-	}
-
-	const std::string& channelName = cmd.params[0];
-
-	// Check Format
-	if (channelName[0] != '#' && channelName[0] != '&') {
-		client->sendReply("403", channelName + " :No such channel");
-		return;
-	}
-
-	// Check Length
-	if (channelName.length() > 50) {
-        client->sendReply("403", channelName + " :Channel name too long");
+    if (cmd.params.empty()) {
+        client->sendReply("461", "JOIN :Not enough parameters");
         return;
     }
 
-	// Check unvalid characters
-	for (size_t i = 1; i < channelName.length(); ++i) {
-		if (!isalnum(channelName[i]) && channelName[i] != '-' && channelName[i] != '_') {
-			client->sendReply("403", channelName + " :Invalid channel name");
-			return;
-		}
+    const std::string& channelName = cmd.params[0];
+    
+    // Check Format
+    if (channelName[0] != '#' && channelName[0] != '&') {
+        client->sendReply("403", channelName + " :No such channel");
+        return;
     }
-
-	Channel* channel = Server::getInstance().getOrCreateChannel(cmd.params[0]);
+    
+    // Check Length
+    if (channelName.length() > 50) {
+        client->sendReply("403", channelName + " :Channel name too long");
+        return;
+    }
+    
+    // Check unvalid characters
+    for (size_t i = 1; i < channelName.length(); ++i) {
+        if (!isalnum(channelName[i]) && channelName[i] != '-' && channelName[i] != '_') {
+            client->sendReply("403", channelName + " :Invalid channel name");
+            return;
+        }
+    }
+    
+    Channel* channel = Server::getInstance().getOrCreateChannel(cmd.params[0]);
+    
+    // Vérifier si le canal nécessite une clé
+    if (!channel->getKey().empty()) {
+        if (cmd.params.size() < 2 || cmd.params[1] != channel->getKey()) {
+            client->sendReply("475", channelName + " :Cannot join channel (+k) - bad key");
+            return;
+        }
+    }
+    
+    // Vérifier si le canal est en mode invite-only
+	if (channel->isInviteOnly()) {
+        if (!channel->isOperator(client) && !channel->isInvited(client)) {
+            client->sendReply("473", channelName + " :Cannot join channel (+i) - you must be invited");
+            return;
+        }
+        // Si le client a utilisé son invitation, la supprimer
+        if (!channel->isOperator(client)) {
+            channel->removeInvite(client);
+        }
+    }
+    
+    // Vérifier si le canal a atteint sa limite d'utilisateurs
+    if (channel->getUserLimit() > 0 && channel->getClients().size() >= channel->getUserLimit()) {
+        client->sendReply("471", channelName + " :Cannot join channel (+l) - channel is full");
+        return;
+    }
+    
+    // Vérifier si le canal était vide AVANT d'ajouter le client
+    bool wasEmpty = channel->getClients().empty();
+    
+    // Ajouter le client au canal
     channel->addClient(client);
-	
-	// Inform all the clients
-	std::string joinMsg = ":" + client->getNickname() + " JOIN " + channelName;
+    
+    // Si le canal était vide, le premier client devient opérateur
+    if (wasEmpty) {
+        channel->addOperator(client);
+    }
+    
+    // Inform all the clients
+    std::string joinMsg = ":" + client->getNickname() + " JOIN " + channelName;
     const std::vector<Client*>& clients = channel->getClients();
     for (size_t i = 0; i < clients.size(); ++i) {
-    	clients[i]->sendMessage(joinMsg);
-	}
-
-	// Display the list of clients in the channel
-	std::string namesList = "";
-
-	for (size_t i = 0; i < clients.size(); ++i) {
-		if (channel->isOperator(clients[i])) {
-			namesList += "@";
-		}
-		namesList += clients[i]->getNickname();
-		if (i < clients.size() - 1) {
-			namesList += " ";
-		}
-	}
-
-	client->sendReply("353", "= " + channelName + " :" + namesList);
-	client->sendReply("366", channelName + " :End of /NAMES list");
-
-	// Display the topic
-	if (!channel->getTopic().empty()) {
-		client->sendReply("332", channelName + " :" + channel->getTopic());
-	}
+        clients[i]->sendMessage(joinMsg);
+    }
     
+    // Display the list of clients in the channel
+    std::string namesList = "";
+    for (size_t i = 0; i < clients.size(); ++i) {
+        if (channel->isOperator(clients[i])) {
+            namesList += "@";
+        }
+        namesList += clients[i]->getNickname();
+        if (i < clients.size() - 1) {
+            namesList += " ";
+        }
+    }
+    
+    client->sendReply("353", "= " + channelName + " :" + namesList);
+    client->sendReply("366", channelName + " :End of /NAMES list");
+    
+    // Display the topic
+    if (!channel->getTopic().empty()) {
+        client->sendReply("332", channelName + " :" + channel->getTopic());
+    }
 }
 
 
@@ -426,6 +460,7 @@ void CommandExecutor::handleInvite(Client* client, const Command& cmd)
         return;
     }
     
+	channel->inviteClient(targetClient);
     // Envoyer l'invitation
     std::string inviteMsg = ":" + client->getNickname() + " INVITE " + target + " :" + channelName;
     targetClient->sendMessage(inviteMsg);
@@ -504,6 +539,8 @@ void CommandExecutor::handleMode(Client* client, const Command& cmd) {
     bool adding = true;
     size_t paramIndex = 2;
 
+	const std::vector<Client*>& clients = channel->getClients();
+
     for (size_t i = 0; i < modeString.length(); ++i) {
         if (modeString[i] == '+') {
             adding = true;
@@ -542,10 +579,42 @@ void CommandExecutor::handleMode(Client* client, const Command& cmd) {
                 client->sendReply("401", cmd.params[paramIndex-1] + " :No such nick/channel");
                 continue;
             }
-            if (adding)
+            if (adding) {
                 channel->addOperator(targetClient);
-            else
+				// std::string opMsg = ":" + client->getNickname() + " PRIVMSG " + channelName +
+				// 			 " :Gives channel operator status to " + targetClient->getNickname();
+				// for (size_t j = 0; j < clients.size(); ++j) {
+				// 	clients[j]->sendMessage(opMsg);
+				// }
+			}
+            else {
                 channel->removeOperator(targetClient);
+				// std::string deopMsg = ":" + client->getNickname() + " PRIVMSG " + channelName + 
+                //               " :Removes channel operator status from " + targetClient->getNickname();
+				// for (size_t j = 0; j < clients.size(); ++j) {
+				// 	clients[j]->sendMessage(deopMsg);
+				// }
+			}
+			std::string modeChange = adding ? "+o" : "-o";
+			std::string modeMsg = ":" + client->getNickname() + " MODE " + channelName + " " +
+					modeChange + " " + targetClient->getNickname();
+			for (size_t j = 0; j < clients.size(); ++j)
+				clients[j]->sendMessage(modeMsg);
+			std::string namesList = "";
+			for (size_t i = 0; i < clients.size(); ++i) {
+				if (channel->isOperator(clients[i])) {
+					namesList += "@";
+				}
+				namesList += clients[i]->getNickname();
+				if (i < clients.size() - 1) {
+					namesList += " ";
+				}
+			}
+			for (size_t i = 0; i < clients.size(); ++i) {
+				clients[i]->sendReply("353", "= " + channelName + " :" + namesList);
+				clients[i]->sendReply("366", channelName + " :End of /NAMES list");
+			}			
+			
         }
         else if (mode == 'l') {
             if (adding) {
@@ -565,13 +634,12 @@ void CommandExecutor::handleMode(Client* client, const Command& cmd) {
     }
 
     // Notifier tous les clients du canal du changement de mode
-    std::string modeMsg = ":" + client->getNickname() + " MODE " + channelName + " " + modeString;
-    for (size_t i = paramIndex; i < cmd.params.size(); ++i)
-        modeMsg += " " + cmd.params[i];
+    // std::string modeMsg = ":" + client->getNickname() + " MODE " + channelName + " " + modeString;
+    // for (size_t i = paramIndex; i < cmd.params.size(); ++i)
+    //     modeMsg += " " + cmd.params[i];
     
-    const std::vector<Client*>& clients = channel->getClients();
-    for (size_t i = 0; i < clients.size(); ++i)
-        clients[i]->sendMessage(modeMsg);
+    // for (size_t i = 0; i < clients.size(); ++i)
+    //     clients[i]->sendMessage(modeMsg);
 }
 
 // Function to compare case-insensitive
