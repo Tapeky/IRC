@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/26 18:19:15 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/02/27 15:24:23 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 void CommandExecutor::executeCommand(Client* client, const Command& cmd) {
 	if (cmd.command == "PASS") {
 		handlePass(client, cmd);
+        return;
 	}
 	else if (!client->isAuthenticated()) {
 		client->sendReply("451", ":You have not registered");
@@ -22,14 +23,25 @@ void CommandExecutor::executeCommand(Client* client, const Command& cmd) {
 	}
 	else if (cmd.command == "NICK") {
 		handleNick(client, cmd);
+        return;
 	}
 	else if (cmd.command == "USER") {
 		handleUser(client, cmd);
+        return;
 	}
 	else if (cmd.command == "QUIT") {
 		handleQuit(client, cmd);
 		return;
 	}
+    else if (cmd.command == "HELP") {
+		handleHelp(client, cmd);
+        return;
+    }
+    
+    if (client->getUsername().empty()) {
+        client->sendReply("451", ":You have not registered");
+        return;
+    }
 	else if (cmd.command == "JOIN") {
 		handleJoin(client, cmd);
 	}
@@ -50,9 +62,6 @@ void CommandExecutor::executeCommand(Client* client, const Command& cmd) {
 	}
 	else if (cmd.command == "MODE") {
 		handleMode(client, cmd);
-	}
-	else if (cmd.command == "HELP") {
-		handleHelp(client, cmd);
 	}
 	else if (cmd.command == "DCC") {
 		handleDCC(client, cmd);
@@ -243,6 +252,7 @@ void CommandExecutor::handlePrivmsg(Client* client, const Command& cmd) {
 		client->sendReply("411", "PRIVMSG :Not enough parameters");
 		return;
 	}
+
 
 	const std::string& target = cmd.params[0];
 	const std::string& message = cmd.params[1];
