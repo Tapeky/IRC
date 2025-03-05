@@ -6,12 +6,11 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/06 15:36:24 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/06 18:44:41 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/03/05 10:11:41 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../inc/Bot.hpp"
-
 
 Bot::Bot(const std::string& nickname, const std::string& channel)
     : _socket(-1), _nickname(nickname), _channel(channel), _connected(false) {}

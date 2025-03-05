@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/02 09:10:13 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/24 17:10:27 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/03/05 10:10:29 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,6 @@ std::string Client::getNextMessage() {
     size_t pos_crlf = _buffer.find("\r\n");
     size_t pos_lf = _buffer.find("\n");
     
-    // Déterminer quelle fin de ligne utiliser
     if (pos_crlf != std::string::npos && (pos_lf == std::string::npos || pos_crlf < pos_lf)) {
         std::string message = _buffer.substr(0, pos_crlf);
         _buffer.erase(0, pos_crlf + 2);

@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/06 17:49:11 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/06 18:44:40 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/03/05 10:11:41 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,19 +65,18 @@ void FileTransfer::setupSocket() {
 void FileTransfer::initiateSend() {
 	setupSocket();
 	
-	// Ouvre le fichier en lecture
 	_file.open(_filename.c_str(), std::ios::binary);
 	if (!_file.is_open())
 		throw std::runtime_error("Failed to open file");
 
-	// Attend une connexion
+	// Wait for connection
 	struct sockaddr_in clientAddr;
 	socklen_t clientLen = sizeof(clientAddr);
 	int clientSocket = accept(_socket, (struct sockaddr*)&clientAddr, &clientLen);
 	if (clientSocket == -1)
 		throw std::runtime_error("Failed to accept connection");
 
-	// Envoie le fichier
+	// send file
 	char buffer[4096];
 	while (!_file.eof()) {
 		_file.read(buffer, sizeof(buffer));
@@ -92,22 +91,19 @@ void FileTransfer::initiateSend() {
 void FileTransfer::acceptTransfer() {
 	struct sockaddr_in addr;
 	
-	// Crée un socket pour recevoir
+	
 	_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (_socket == -1)
 		throw std::runtime_error("Failed to create socket");
 
-	// Configure l'adresse
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(_port);
 	if (inet_pton(AF_INET, _ip.c_str(), &addr.sin_addr) <= 0)
 		throw std::runtime_error("Invalid address");
 
-	// Connecte au serveur
 	if (connect(_socket, (struct sockaddr*)&addr, sizeof(addr)) == -1)
 		throw std::runtime_error("Failed to connect");
 
-	// Reçoit le fichier
 	std::ofstream outFile(_filename.c_str(), std::ios::binary);
 	if (!outFile.is_open())
 		throw std::runtime_error("Failed to create output file");

@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:12 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/04 00:13:22 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/03/05 09:54:50 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,5 @@ class CommandParser {
 	public:
 		static Command parseCommand(const std::string& message);
 };
-
 
 #endif

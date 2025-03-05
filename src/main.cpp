@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/01 12:02:57 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/26 16:36:10 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/03/05 10:10:31 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,7 @@ int main(int argc, char *argv[]) {
         signal(SIGINT, Server::handleSignal);
         int port = std::atoi(argv[1]);
         std::string password = argv[2];
+        CommandExecutor::initCommands();
         Server::initInstance(port, password);
         Server::getInstance().start();
         Server::destroyInstance();
