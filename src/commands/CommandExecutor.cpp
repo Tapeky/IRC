@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/04 00:09:27 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/03/05 10:07:57 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/03/06 14:16:32 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,7 @@ bool CommandExecutor::checkAuth(Client* client, CommandAuth requiredAuth) {
         case AUTH_BASIC:
             return client->isAuthenticated();
         case AUTH_REGISTERED:
-            return client->isAuthenticated() && !client->getUsername().empty();
+            return client->isAuthenticated() && !client->getUsername().empty() && !client->getNickname().empty();
         default:
             return false;
     }
@@ -57,7 +57,7 @@ void CommandExecutor::executeCommand(Client* client, const Command& cmd) {
         if (it->second.authLevel == AUTH_BASIC) {
             client->sendReply("451", ":You have not registered");
         } else if (it->second.authLevel == AUTH_REGISTERED) {
-            client->sendReply("451", ":You need to set a username (USER command)");
+            client->sendReply("451", ":You need to set a username (USER command) and a nickname (NICK command)");
         }
         return;
     }

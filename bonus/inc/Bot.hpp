@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/06 15:30:02 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/03/05 10:11:44 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/03/06 15:39:32 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,8 +46,8 @@ class Bot {
 	private:
 		void	authenticate(const std::string& password);
 		void	handleCommand(const std::string& message);
+		void	closeSocket();
 
 };
-
 
 #endif

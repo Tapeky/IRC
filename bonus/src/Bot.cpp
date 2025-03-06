@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/06 15:36:24 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/03/05 10:11:41 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/03/06 15:39:05 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,14 +16,20 @@ Bot::Bot(const std::string& nickname, const std::string& channel)
     : _socket(-1), _nickname(nickname), _channel(channel), _connected(false) {}
 
 Bot::~Bot() {
+    closeSocket();
+}
+
+void Bot::closeSocket() {
     if (_socket != -1) {
         close(_socket);
+        _socket = -1;
     }
 }
 
 void Bot::connect(const std::string& host, int port, const std::string& password) {
     struct sockaddr_in addr;
 
+    closeSocket();
     _socket = socket(AF_INET, SOCK_STREAM, 0);
     if (_socket == -1)
         throw std::runtime_error("Failed to create socket");
@@ -52,7 +58,10 @@ void Bot::sendMessage(const std::string& message) {
 }
 
 void Bot::joinChannel() {
-    sendMessage("JOIN " + _channel);
+    if (_channel[0] == '#')
+        sendMessage("JOIN " + _channel);
+    else
+        sendMessage("JOIN #" + _channel);
 }
 
 void Bot::processMessages() {
@@ -84,20 +93,44 @@ void Bot::handleCommand(const std::string& message) {
         return;
     }
 
-    size_t spacePos = message.find(' ');
-    if (spacePos == std::string::npos)
-        return;
+    std::string channelToCheck = (_channel[0] == '#') ? _channel : "#" + _channel;
 
-	if (message.find("PRIVMSG " + _channel) != std::string::npos) {
-    	if (message.find(":!hello") != std::string::npos) {
-    	    sendMessage("PRIVMSG " + _channel + " :Hello! I am a bot!");
-    	}
-    	else if (message.find(":!time") != std::string::npos) {
-    	    time_t now = time(0);
-    	    sendMessage("PRIVMSG " + _channel + " :Current time is: " + ctime(&now));
-    	}
-    	else if (message.find(":!help") != std::string::npos) {
-    	    sendMessage("PRIVMSG " + _channel + " :Available commands: !hello, !time, !help");
+    size_t privmsgPos = message.find("PRIVMSG " + channelToCheck + " :");
+    if (privmsgPos != std::string::npos) {
+        size_t nickEndPos = message.find('!');
+        if (nickEndPos != std::string::npos && nickEndPos > 1) {
+            std::string sender = message.substr(1, nickEndPos - 1);
+            if (sender == _nickname) {
+                return;
+            }
+        }
+        
+        size_t contentPos = message.find(" :", privmsgPos);
+        if (contentPos != std::string::npos) {
+            std::string content = message.substr(contentPos + 2);
+            
+            if (content == "!hello") {
+                sendMessage("PRIVMSG " + channelToCheck + " :Hello! I am a bot!");
+            }
+            else if (content == "!time") {
+                time_t now = time(0);
+                std::string timeStr = ctime(&now);
+                timeStr.erase(timeStr.find('\n'));
+                sendMessage("PRIVMSG " + channelToCheck + " :Current time is: " + timeStr);
+            }
+            else if (content == "!help") {
+                sendMessage("PRIVMSG " + channelToCheck + " :Available commands: !hello, !time, !help");
+            }
+        }
     }
-	}
+}
+
+void Bot::disconnect() {
+    if (_connected) {
+        sendMessage("QUIT :Bot déconnecté");
+        usleep(100000);
+        closeSocket();     
+        _connected = false;
+        std::cout << "Bot déconnecté du serveur" << std::endl;
+    }
 }
