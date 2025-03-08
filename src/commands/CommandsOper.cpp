@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/05 09:10:19 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/03/05 10:10:16 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/03/09 00:52:28 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -146,25 +146,41 @@ void CommandExecutor::handleMode(Client* client, const Command& cmd) {
 
     bool adding = true;
     size_t paramIndex = 2;
-
-	const std::vector<Client*>& clients = channel->getClients();
+    const std::vector<Client*>& clients = channel->getClients();
+    bool modeChanged = false;
+    std::string modeChanges = "";
+    std::string modeParams = "";
 
     for (size_t i = 0; i < modeString.length(); ++i) {
         if (modeString[i] == '+') {
             adding = true;
+            if (i == modeString.length() - 1 || modeString[i+1] == '+' || modeString[i+1] == '-')
+                continue;
+            modeChanges += "+";
             continue;
         }
         if (modeString[i] == '-') {
             adding = false;
+            if (i == modeString.length() - 1 || modeString[i+1] == '+' || modeString[i+1] == '-')
+                continue;
+            modeChanges += "-";
             continue;
         }
 
         char mode = modeString[i];
         if (mode == 'i') {
-            channel->setInviteOnly(adding);
+            if (channel->isInviteOnly() != adding) {
+                channel->setInviteOnly(adding);
+                modeChanges += 'i';
+                modeChanged = true;
+            }
         }
         else if (mode == 't') {
-            channel->setTopicRestricted(adding);
+            if (channel->isTopicRestricted() != adding) {
+                channel->setTopicRestricted(adding);
+                modeChanges += 't';
+                modeChanged = true;
+            }
         }
         else if (mode == 'k') {
             if (adding) {
@@ -172,9 +188,17 @@ void CommandExecutor::handleMode(Client* client, const Command& cmd) {
                     client->sendReply("461", "MODE +k :Not enough parameters");
                     continue;
                 }
-                channel->setKey(cmd.params[paramIndex++]);
+                std::string key = cmd.params[paramIndex++];
+                channel->setKey(key);
+                modeChanges += 'k';
+                modeParams += " " + key;
+                modeChanged = true;
             } else {
-                channel->setKey("");
+                if (!channel->getKey().empty()) {
+                    channel->setKey("");
+                    modeChanges += 'k';
+                    modeChanged = true;
+                }
             }
         }
         else if (mode == 'o') {
@@ -182,37 +206,26 @@ void CommandExecutor::handleMode(Client* client, const Command& cmd) {
                 client->sendReply("461", "MODE +/-o :Not enough parameters");
                 continue;
             }
-            Client* targetClient = Server::getInstance().getClientByNickname(cmd.params[paramIndex++]);
+            std::string targetNick = cmd.params[paramIndex++];
+            Client* targetClient = Server::getInstance().getClientByNickname(targetNick);
             if (!targetClient) {
-                client->sendReply("401", cmd.params[paramIndex-1] + " :No such nick/channel");
+                client->sendReply("401", targetNick + " :No such nick/channel");
                 continue;
             }
-            if (adding) {
+            
+            bool isAlreadyOperator = channel->isOperator(targetClient);
+            if (adding && !isAlreadyOperator) {
                 channel->addOperator(targetClient);
-			}
-            else {
+                modeChanges += 'o';
+                modeParams += " " + targetNick;
+                modeChanged = true;
+            }
+            else if (!adding && isAlreadyOperator) {
                 channel->removeOperator(targetClient);
-			}
-			std::string modeChange = adding ? "+o" : "-o";
-			std::string modeMsg = ":" + client->getNickname() + " MODE " + channelName + " " +
-					modeChange + " " + targetClient->getNickname();
-			for (size_t j = 0; j < clients.size(); ++j)
-				clients[j]->sendMessage(modeMsg);
-			std::string namesList = "";
-			for (size_t i = 0; i < clients.size(); ++i) {
-				if (channel->isOperator(clients[i])) {
-					namesList += "@";
-				}
-				namesList += clients[i]->getNickname();
-				if (i < clients.size() - 1) {
-					namesList += " ";
-				}
-			}
-			for (size_t i = 0; i < clients.size(); ++i) {
-				clients[i]->sendReply("353", "= " + channelName + " :" + namesList);
-				clients[i]->sendReply("366", channelName + " :End of /NAMES list");
-			}			
-			
+                modeChanges += 'o';
+                modeParams += " " + targetNick;
+                modeChanged = true;
+            }
         }
         else if (mode == 'l') {
             if (adding) {
@@ -220,14 +233,51 @@ void CommandExecutor::handleMode(Client* client, const Command& cmd) {
                     client->sendReply("461", "MODE +l :Not enough parameters");
                     continue;
                 }
-                int limit = atoi(cmd.params[paramIndex++].c_str());
+                std::string limitStr = cmd.params[paramIndex++];
+                int limit = atoi(limitStr.c_str());
+                if (limit <= 0) {
+                    client->sendReply("472", "l :Invalid limit value");
+                    continue;
+                }
                 channel->setUserLimit(limit);
+                modeChanges += 'l';
+                modeParams += " " + limitStr;
+                modeChanged = true;
             } else {
-                channel->setUserLimit(0);
+                if (channel->getUserLimit() > 0) {
+                    channel->setUserLimit(0);
+                    modeChanges += 'l';
+                    modeChanged = true;
+                }
             }
         }
         else {
             client->sendReply("472", std::string(1, modeString[i]) + " :is unknown mode char to me");
+        }
+    }
+
+    if (modeChanged) {
+        std::string modeMsg = ":" + client->getNickname() + " MODE " + channelName + " " + modeChanges + modeParams;
+        for (size_t i = 0; i < clients.size(); ++i) {
+            clients[i]->sendMessage(modeMsg);
+        }
+        
+        if (modeChanges.find('o') != std::string::npos) {
+            std::string namesList = "";
+            for (size_t i = 0; i < clients.size(); ++i) {
+                if (channel->isOperator(clients[i])) {
+                    namesList += "@";
+                }
+                namesList += clients[i]->getNickname();
+                if (i < clients.size() - 1) {
+                    namesList += " ";
+                }
+            }
+            
+            for (size_t i = 0; i < clients.size(); ++i) {
+                clients[i]->sendReply("353", "= " + channelName + " :" + namesList);
+                clients[i]->sendReply("366", channelName + " :End of /NAMES list");
+            }
         }
     }
 }

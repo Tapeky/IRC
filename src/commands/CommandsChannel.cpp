@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/05 09:08:19 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/03/05 10:09:45 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/03/09 00:56:36 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ void CommandExecutor::handleJoin(Client* client, const Command& cmd) {
     
     // Check Format
     if (channelName[0] != '#' && channelName[0] != '&') {
-        client->sendReply("403", channelName + " :No such channel");
+        client->sendReply("403", channelName + " :No such channel.\nTip: Channel names always start with '#' :)");
         return;
     }
     

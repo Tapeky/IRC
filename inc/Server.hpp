@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/01 11:57:05 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/02/24 13:48:18 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/03/09 00:48:57 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,15 +39,12 @@ class Server {
 		std::vector<pollfd>			_pollfds;
 		std::map<std::string, Channel*>	_channels;
 
-		// Constructeur privé pour Singleton
 		Server(int port, std::string& password);
 		Server(const Server&);				
 		void operator=(const Server&);		
 
 	public:
 		~Server();
-
-		// Méthodes Singleton
 		static Server& getInstance() {
 			if (!_instance)
 				throw std::runtime_error("Server not initialized");
@@ -64,7 +61,6 @@ class Server {
 			_instance = NULL;
 		}
 
-		// Méthodes existantes
 		void		start();
 		void		run();
 		bool		isClientAuthenticated(int fd) const;
