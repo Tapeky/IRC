@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/01 12:09:09 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/03/05 10:13:14 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/03/09 00:44:27 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -232,28 +232,41 @@ void Server::handleClientData(int clientfd) {
 }
 
 void Server::disconnectClient(int clientfd) {
-	std::stringstream ss;
-	ss << clientfd;
-	logInfo("Disconnecting client: " + ss.str());
+    std::stringstream ss;
+    ss << clientfd;
+    logInfo("Disconnecting client: " + ss.str());
 
-	// Inform other clients if necessary
-	std::map<int, Client*>::iterator it = _clients.find(clientfd);
-	if (it != _clients.end() && it->second) {
-		if (!it->second->getNickname().empty()) {
-			broadcastMessage(":" + it->second->getNickname() + " QUIT :Client disconnected");
-		}
-		delete it->second;
-		_clients.erase(it);
-	}
+    std::map<int, Client*>::iterator it = _clients.find(clientfd);
+    if (it != _clients.end() && it->second) {
+        Client* client = it->second;
+        std::string nickname = client->getNickname();
+        
+        for (std::map<std::string, Channel*>::iterator chanIt = _channels.begin(); 
+             chanIt != _channels.end(); ++chanIt) {
+            Channel* channel = chanIt->second;
+            channel->removeClient(client);
+           
+			if (channel->isOperator(client))
+                channel->removeOperator(client);
 
-	// Close the socket and remove it from poll
-	for (size_t i = 0; i < _pollfds.size(); ++i) {
-		if (_pollfds[i].fd == clientfd) {
-			close(clientfd);
-			_pollfds.erase(_pollfds.begin() + i);
-			break;
-		}
-	}
+				if (channel->isInvited(client))
+                channel->removeInvite(client);
+        }
+        
+        if (!nickname.empty())
+            broadcastMessage(":" + nickname + " QUIT :Client disconnected");
+        
+        delete client;
+        _clients.erase(it);
+    }
+
+    for (size_t i = 0; i < _pollfds.size(); ++i) {
+        if (_pollfds[i].fd == clientfd) {
+            close(clientfd);
+            _pollfds.erase(_pollfds.begin() + i);
+            break;
+        }
+    }
 }
 
 void Server::handleClientMessage(Client* client, const std::string& message) {

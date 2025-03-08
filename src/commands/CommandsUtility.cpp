@@ -6,7 +6,7 @@
 /*   By: tsadouk <tsadouk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/05 09:05:54 by tsadouk           #+#    #+#             */
-/*   Updated: 2025/03/05 10:10:25 by tsadouk          ###   ########.fr       */
+/*   Updated: 2025/03/09 00:44:55 by tsadouk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,6 @@
 
 void CommandExecutor::handleQuit(Client* client, const Command& cmd) {
 	std::string quitMessage = cmd.params.empty() ? "Client Quit" : cmd.params[0];
-	Server::getInstance().broadcastMessage(":" + client->getNickname() + " QUIT :" + quitMessage);
     Server::getInstance().disconnectClient(client->getFd());
 }
 
