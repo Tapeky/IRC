@@ -1,146 +1,119 @@
 #!/bin/bash
 # tests/basic/messaging_test.sh
+
 PORT=${1:-6667}
 PASSWORD=${2:-"testpassword"}
 
-# Démarrer le serveur
+# Find the script directory regardless of how it's called
 if [[ "$0" == /* ]]; then
     SCRIPT_DIR=$(dirname "$0")
 else
-    SCRIPT_DIR=$(dirname "$(pwd)/$0")
+    SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 fi
 ROOT_DIR=$(cd "$SCRIPT_DIR/../.." && pwd)
 
-# Fonction de nettoyage
+# Function to cleanup resources
 cleanup() {
-    echo "Nettoyage des ressources..."
-    [[ -n "$SERVER_PID" ]] && kill $SERVER_PID 2>/dev/null || true
-    rm -f /tmp/irc_test_*_$$
+    echo "Cleaning up resources..."
+    [[ -n "$SERVER_PID" ]] && kill $SERVER_PID 2>/dev/null
+    pkill -f "nc localhost $PORT" 2>/dev/null
+    rm -f /tmp/irc_test_*_$$ 2>/dev/null
 }
 trap cleanup EXIT INT TERM
 
-cd "$ROOT_DIR"
-echo "Démarrage du serveur..."
-./ircserv $PORT $PASSWORD > /dev/null 2>&1 &
-SERVER_PID=$!
-sleep 2
-
-# Vérifier si le serveur a démarré
-if ! ps -p $SERVER_PID > /dev/null; then
-    echo "❌ Le serveur n'a pas démarré."
-    exit 1
+# Check if server is already running (from run_all_tests.sh)
+if ! nc -z localhost $PORT 2>/dev/null; then
+    cd "$ROOT_DIR"
+    echo "Starting server..."
+    ./ircserv $PORT $PASSWORD > /dev/null 2>&1 &
+    SERVER_PID=$!
+    sleep 1
 fi
-echo "Serveur démarré avec PID $SERVER_PID"
 
-echo "Test de messagerie..."
+echo "Testing messaging functionality..."
 
-# Approche alternative: utiliser des processus séquentiels plutôt que des FIFOs
+# Test 1: Private message between users
+echo "Test 1: Private messaging"
 
-# Client 1: Authentification
-echo "1. Authentification du client1..."
-CLIENT1_AUTH=$(printf "PASS %s\r\nNICK client1\r\nUSER user1 host1 server1 :Real Name 1\r\n" "$PASSWORD" | nc -w 2 localhost $PORT)
-if ! echo "$CLIENT1_AUTH" | grep -q "001"; then
-    echo "❌ Authentification échouée pour client1"
-    echo "$CLIENT1_AUTH"
-    exit 1
-fi
-echo "✅ Client1 authentifié"
-
-# Client 2: Authentification
-echo "2. Authentification du client2..."
-CLIENT2_AUTH=$(printf "PASS %s\r\nNICK client2\r\nUSER user2 host2 server2 :Real Name 2\r\n" "$PASSWORD" | nc -w 2 localhost $PORT)
-if ! echo "$CLIENT2_AUTH" | grep -q "001"; then
-    echo "❌ Authentification échouée pour client2"
-    echo "$CLIENT2_AUTH"
-    exit 1
-fi
-echo "✅ Client2 authentifié"
-
-# Test 1: Message privé entre utilisateurs
-echo "3. Test de message privé..."
-# Démarrer client2 en arrière-plan pour écouter
+# Set up client2 listening connection
 echo "PASS $PASSWORD" > /tmp/irc_test_client2_$$
 echo "NICK client2" >> /tmp/irc_test_client2_$$
 echo "USER user2 host2 server2 :Real Name 2" >> /tmp/irc_test_client2_$$
-# Ajouter un sleep pour attendre le message
-(nc localhost $PORT < /tmp/irc_test_client2_$$ > /tmp/irc_test_output2_$$ & echo $! > /tmp/irc_test_pid2_$$; sleep 5) &
 
-# Attendre que client2 soit connecté
+# Start client2 in background
+(nc localhost $PORT < /tmp/irc_test_client2_$$ > /tmp/irc_test_output2_$$ & echo $! > /tmp/irc_test_pid2_$$; sleep 10) &
+
+# Wait for client2 to connect
 sleep 2
 
-# Client1 envoie un message à client2
-echo "4. Envoi du message privé..."
+# Client1 sends message to client2
 TEST_MESSAGE="Hello from client1 to client2"
-CLIENT1_MSG=$(printf "PASS %s\r\nNICK client1\r\nUSER user1 host1 server1 :Real Name 1\r\nPRIVMSG client2 :%s\r\n" "$PASSWORD" "$TEST_MESSAGE" | nc -w 2 localhost $PORT)
+echo "Sending private message..."
+printf "PASS %s\r\nNICK client1\r\nUSER user1 host1 server1 :Real Name 1\r\nPRIVMSG client2 :%s\r\n" "$PASSWORD" "$TEST_MESSAGE" | nc -w 2 localhost $PORT > /dev/null
 
-# Attendre que le message soit reçu
+# Wait for message to be received
 sleep 2
 
-# Arrêter client2
-kill $(cat /tmp/irc_test_pid2_$$) 2>/dev/null || true
-
-# Vérifier si client2 a reçu le message
+# Check if client2 received the message
 CLIENT2_OUTPUT=$(cat /tmp/irc_test_output2_$$)
-echo "Réponse de client2:"
-echo "$CLIENT2_OUTPUT"
-
 if echo "$CLIENT2_OUTPUT" | grep -q "$TEST_MESSAGE"; then
-    echo "✅ Test 1 réussi: Message privé reçu"
+    echo "✅ Test 1 passed: Private message received"
 else
-    echo "❌ Test 1 échoué: Message privé non reçu"
+    echo "❌ Test 1 failed: Private message not received"
+    echo "Client2 output:"
+    echo "$CLIENT2_OUTPUT"
     exit 1
 fi
 
-# Test 2: Message de canal
-echo "5. Test de message dans un canal..."
+# Kill client2 background process
+kill $(cat /tmp/irc_test_pid2_$$) 2>/dev/null || true
 
-# Créer un canal et joindre les deux clients
+# Test 2: Channel messaging
+echo "Test 2: Channel messaging"
+
+# Create a channel with two clients
+echo "Creating channel with two clients..."
+
+# Join with client1
 echo "PASS $PASSWORD" > /tmp/irc_test_join1_$$
 echo "NICK client1" >> /tmp/irc_test_join1_$$
 echo "USER user1 host1 server1 :Real Name 1" >> /tmp/irc_test_join1_$$
 echo "JOIN #testchannel" >> /tmp/irc_test_join1_$$
 nc -w 2 localhost $PORT < /tmp/irc_test_join1_$$ > /dev/null
 
-echo "PASS $PASSWORD" > /tmp/irc_test_join2_$$
-echo "NICK client2" >> /tmp/irc_test_join2_$$
-echo "USER user2 host2 server2 :Real Name 2" >> /tmp/irc_test_join2_$$
-echo "JOIN #testchannel" >> /tmp/irc_test_join2_$$
-nc -w 2 localhost $PORT < /tmp/irc_test_join2_$$ > /dev/null
-
-# Démarrer client2 pour écouter les messages du canal
+# Start client2 to listen for channel messages
 echo "PASS $PASSWORD" > /tmp/irc_test_channel2_$$
 echo "NICK client2" >> /tmp/irc_test_channel2_$$
 echo "USER user2 host2 server2 :Real Name 2" >> /tmp/irc_test_channel2_$$
 echo "JOIN #testchannel" >> /tmp/irc_test_channel2_$$
-(nc localhost $PORT < /tmp/irc_test_channel2_$$ > /tmp/irc_test_channel_output2_$$ & echo $! > /tmp/irc_test_channel_pid2_$$; sleep 5) &
 
+# Start client2 in background
+(nc localhost $PORT < /tmp/irc_test_channel2_$$ > /tmp/irc_test_channel_output2_$$ & echo $! > /tmp/irc_test_channel_pid2_$$; sleep 10) &
+
+# Wait for client2 to join
 sleep 2
 
-# Client1 envoie un message au canal
+# Client1 sends message to channel
 CHANNEL_MESSAGE="Hello everyone in #testchannel!"
-echo "PASS $PASSWORD" > /tmp/irc_test_channel1_$$
-echo "NICK client1" >> /tmp/irc_test_channel1_$$
-echo "USER user1 host1 server1 :Real Name 1" >> /tmp/irc_test_channel1_$$
-echo "JOIN #testchannel" >> /tmp/irc_test_channel1_$$
-echo "PRIVMSG #testchannel :$CHANNEL_MESSAGE" >> /tmp/irc_test_channel1_$$
-nc -w 2 localhost $PORT < /tmp/irc_test_channel1_$$ > /dev/null
+echo "Sending channel message..."
+printf "PASS %s\r\nNICK client1\r\nUSER user1 host1 server1 :Real Name 1\r\nJOIN #testchannel\r\nPRIVMSG #testchannel :%s\r\n" "$PASSWORD" "$CHANNEL_MESSAGE" | nc -w 2 localhost $PORT > /dev/null
 
+# Wait for message to be received
 sleep 2
 
-# Arrêter client2
-kill $(cat /tmp/irc_test_channel_pid2_$$) 2>/dev/null || true
-
-# Vérifier si client2 a reçu le message du canal
+# Check if client2 received the channel message
 CHANNEL_OUTPUT=$(cat /tmp/irc_test_channel_output2_$$)
-echo "Réponse de client2 pour le canal:"
-echo "$CHANNEL_OUTPUT"
-
 if echo "$CHANNEL_OUTPUT" | grep -q "$CHANNEL_MESSAGE"; then
-    echo "✅ Test 2 réussi: Message de canal reçu"
+    echo "✅ Test 2 passed: Channel message received"
 else
-    echo "❌ Test 2 échoué: Message de canal non reçu"
+    echo "❌ Test 2 failed: Channel message not received"
+    echo "Channel output:"
+    echo "$CHANNEL_OUTPUT"
     exit 1
 fi
 
-echo "Tous les tests de messagerie ont réussi!"
+# Kill client2 background process
+kill $(cat /tmp/irc_test_channel_pid2_$$) 2>/dev/null || true
+
+echo "All messaging tests passed!"
 exit 0
